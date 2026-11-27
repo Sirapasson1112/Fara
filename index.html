@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ตารางกะงาน & คำนวณวันเงินออก</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS for reading real Excel (.xlsx, .xls, .csv) files -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -55,20 +57,24 @@
     <main class="max-w-4xl mx-auto px-3 pt-4 space-y-4">
 
         <!-- Action Toolbar -->
-        <div class="flex flex-wrap items-center justify-between gap-2 no-print">
-            <button onclick="openBulkModal()" class="flex-1 sm:flex-none bg-sky-500 hover:bg-sky-600 active:scale-95 text-white font-medium text-sm px-4 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+        <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-between gap-2 no-print">
+            <button onclick="openBulkModal()" class="col-span-2 sm:col-span-1 bg-sky-500 hover:bg-sky-600 active:scale-95 text-white font-medium text-sm px-4 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
                 <i class="fa-solid fa-wand-magic-sparkles"></i>
                 <span>จัดกะล่วงหน้า (ทีละหลายวัน)</span>
             </button>
 
-            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <button onclick="openSettingsModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs sm:text-sm px-3 py-2.5 rounded-xl shadow-sm transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-sliders text-orange-500"></i>
-                    <span>ตั้งค่ากะ/เรทค่าแรง</span>
+            <div class="col-span-2 sm:col-span-1 flex items-center gap-1.5 sm:gap-2 justify-end flex-wrap">
+                <button onclick="openImportModal()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs sm:text-sm px-3 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span>นำเข้า Excel</span>
                 </button>
-                <button onclick="exportCSV()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs sm:text-sm px-3 py-2.5 rounded-xl shadow-sm transition flex items-center gap-1.5">
+                <button onclick="exportExcel()" class="flex-1 sm:flex-none bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs sm:text-sm px-3 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-file-excel text-emerald-600"></i>
-                    <span>โหลด Excel</span>
+                    <span>ส่งออก Excel</span>
+                </button>
+                <button onclick="openSettingsModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs sm:text-sm px-3 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5" title="ตั้งค่า">
+                    <i class="fa-solid fa-sliders text-orange-500"></i>
+                    <span class="hidden sm:inline">ตั้งค่า</span>
                 </button>
             </div>
         </div>
@@ -150,9 +156,14 @@
                 <span class="text-xs font-semibold text-slate-600">
                     <i class="fa-regular fa-hand-pointer mr-1 text-sky-500"></i> แตะที่แถวใดก็ได้เพื่อแก้ไขเวลา / ตำแหน่ง / วันหยุด
                 </span>
-                <button onclick="loadDemoData()" class="text-xs text-sky-600 hover:underline font-medium no-print">
-                    <i class="fa-solid fa-rotate-right mr-1"></i>ใส่ตัวอย่างตาราง
-                </button>
+                <div class="flex items-center gap-3 no-print">
+                    <button onclick="clearCurrentMonth()" class="text-xs text-rose-500 hover:underline font-medium">
+                        ล้างเดือนนี้
+                    </button>
+                    <button onclick="loadDemoData()" class="text-xs text-sky-600 hover:underline font-medium">
+                        <i class="fa-solid fa-rotate-right mr-1"></i>ตัวอย่าง
+                    </button>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
@@ -189,7 +200,6 @@
                 </button>
             </div>
 
-            <!-- Status Toggle -->
             <div class="grid grid-cols-3 gap-2">
                 <button type="button" id="btnTypeWork" onclick="setDayType('work')" class="py-2 rounded-xl text-xs font-semibold border transition flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-briefcase"></i> ทำงาน
@@ -202,7 +212,6 @@
                 </button>
             </div>
 
-            <!-- Work Fields -->
             <div id="workFieldsContainer" class="space-y-4">
                 <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1.5">จิ้มเลือกกะด่วน (Preset):</label>
@@ -315,7 +324,64 @@
         </div>
     </div>
 
-    <!-- MODAL 3: Settings (Presets & Wage Rate) -->
+    <!-- MODAL 3: Import Excel / Google Sheets Modal -->
+    <div id="importModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-lg">นำเข้าข้อมูลจาก Excel / Sheets</h3>
+                    <p class="text-xs text-slate-500">เลือกอัปโหลดไฟล์ หรือก๊อปปี้จากตารางเดิมมาวางได้เลย</p>
+                </div>
+                <button onclick="closeModal('importModal')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Method 1: Upload Excel File -->
+            <div class="bg-emerald-50/70 border-2 border-dashed border-emerald-300 rounded-2xl p-4 text-center space-y-2">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
+                    <i class="fa-solid fa-file-excel text-lg"></i>
+                </div>
+                <p class="text-sm font-semibold text-slate-800">วิธีที่ 1: เลือกไฟล์ Excel (.xlsx, .xls, .csv)</p>
+                <p class="text-xs text-slate-500">รองรับตารางรูปแบบ: วันที่ | เข้างาน | เลิกงาน | ตำแหน่ง | (OT)</p>
+                <div class="pt-1">
+                    <label class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer shadow-sm transition">
+                        <i class="fa-solid fa-folder-open"></i>
+                        <span>เลือกไฟล์จากเครื่อง</span>
+                        <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" onchange="handleExcelUpload(event)" class="hidden">
+                    </label>
+                </div>
+                <!-- Sheet selector if workbook has multiple sheets -->
+                <div id="sheetSelectorBox" class="hidden pt-2 text-left bg-white p-3 rounded-xl border border-emerald-200 space-y-2">
+                    <label class="block text-xs font-semibold text-slate-700">เลือกชีต (Sheet) ที่ต้องการนำเข้า:</label>
+                    <div class="flex gap-2">
+                        <select id="workbookSheetSelect" class="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold"></select>
+                        <button type="button" onclick="processSelectedSheet()" class="bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">นำเข้าชีตนี้</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative flex py-1 items-center">
+                <div class="flex-grow border-t border-slate-200"></div>
+                <span class="flex-shrink mx-3 text-xs text-slate-400">หรือ</span>
+                <div class="flex-grow border-t border-slate-200"></div>
+            </div>
+
+            <!-- Method 2: Copy & Paste from Google Sheets -->
+            <div class="space-y-2">
+                <label class="block text-sm font-semibold text-slate-800">
+                    วิธีที่ 2: ก๊อปปี้จาก Google Sheets / Excel มาวางตรงนี้
+                </label>
+                <p class="text-xs text-slate-500">คลุมดำแถววันที่ 1–30 จากในแอป Sheets กดคัดลอก แล้วกดวางด้านล่าง:</p>
+                <textarea id="pasteDataArea" rows="5" class="w-full border border-slate-200 rounded-xl p-3 text-xs font-mono bg-slate-50 focus:bg-white focus:outline-none focus:border-sky-500" placeholder="ตัวอย่างที่วางได้ทันที:&#10;1	7:00	16:00	SB&#10;2	14:00	23:00	SB&#10;3	หยุด&#10;4	12:00	22:00	CFC	OT 1 ชม."></textarea>
+                <button type="button" onclick="handlePastedData()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2.5 rounded-xl text-sm shadow-sm transition">
+                    แปลงข้อมูลที่วางลงตาราง
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Settings -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -374,6 +440,7 @@
         };
         let activeEditDay = null;
         let activeDayType = 'work';
+        let loadedWorkbook = null;
 
         function formatMoney(num) {
             return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -573,7 +640,6 @@
                 tbody.appendChild(tr);
             }
 
-            // Calculate Income by Hourly Rate (52/hr) + OT Rate (79.50/hr)
             const c1Income = (c1.regHrs * settings.hourlyRate) + (c1.otHrs * settings.otRate);
             const c2Income = (c2.regHrs * settings.hourlyRate) + (c2.otHrs * settings.otRate);
 
@@ -593,6 +659,163 @@
             document.getElementById('totRegHrs').textContent = c1.regHrs + c2.regHrs;
             document.getElementById('totOtHrs').textContent = c1.otHrs + c2.otHrs;
             document.getElementById('totIncome').textContent = `฿${formatMoney(c1Income + c2Income)}`;
+        }
+
+        // --- Excel & Sheets Import Logic ---
+        function openImportModal() {
+            document.getElementById('excelFileInput').value = '';
+            document.getElementById('sheetSelectorBox').classList.add('hidden');
+            document.getElementById('importModal').classList.remove('hidden');
+        }
+
+        function normalizeTime(val) {
+            if (val === null || val === undefined || val === '') return null;
+            // Handle Excel numeric time fraction (e.g., 0.291666 -> "07:00")
+            if (typeof val === 'number' && val > 0 && val < 1) {
+                const totalMins = Math.round(val * 24 * 60);
+                const h = Math.floor(totalMins / 60);
+                const m = totalMins % 60;
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            }
+            const str = String(val).trim();
+            const match = str.match(/^(\d{1,2})[:.](\d{2})/);
+            if (match) {
+                return `${String(parseInt(match[1])).padStart(2, '0')}:${match[2]}`;
+            }
+            return null;
+        }
+
+        function parseRowsIntoSchedule(rows) {
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const daysInMonth = getDaysInMonth(year, month);
+            if (!scheduleData[currentYearMonth]) scheduleData[currentYearMonth] = {};
+
+            let importedCount = 0;
+
+            rows.forEach(row => {
+                if (!Array.isArray(row) || row.length < 2) return;
+                // Clean cells
+                const cells = row.map(c => (c === null || c === undefined) ? '' : String(c).trim());
+
+                // Find day number (1-31) in first 2 columns
+                let dayNum = null;
+                let colOffset = 0;
+                if (/^\d{1,2}$/.test(cells[0]) && parseInt(cells[0]) >= 1 && parseInt(cells[0]) <= daysInMonth) {
+                    dayNum = parseInt(cells[0]);
+                    colOffset = 1;
+                } else if (cells.length > 2 && /^\d{1,2}$/.test(cells[1]) && parseInt(cells[1]) >= 1 && parseInt(cells[1]) <= daysInMonth) {
+                    dayNum = parseInt(cells[1]);
+                    colOffset = 2;
+                }
+
+                if (!dayNum) return;
+
+                const rowText = cells.slice(colOffset).join(' ');
+                if (rowText.includes('หยุด')) {
+                    scheduleData[currentYearMonth][dayNum] = { type: 'off' };
+                    importedCount++;
+                    return;
+                }
+
+                // Look for start & end times
+                const rawStart = row[colOffset];
+                const rawEnd = row[colOffset + 1];
+                const start = normalizeTime(rawStart);
+                const end = normalizeTime(rawEnd);
+
+                if (start && end) {
+                    const posRaw = cells[colOffset + 2] || '';
+                    const pos = (posRaw && posRaw !== '-' && !posRaw.includes('OT')) ? posRaw.toUpperCase() : '';
+
+                    // Check if OT is explicitly written anywhere in the remaining columns (e.g., "OT 1 ชม." or "1")
+                    let explicitOt = null;
+                    for (let i = colOffset + 2; i < cells.length; i++) {
+                        const c = cells[i];
+                        const otMatch = c.match(/OT\s*([\d.]+)/i);
+                        if (otMatch) {
+                            explicitOt = parseFloat(otMatch[1]);
+                            break;
+                        }
+                    }
+
+                    const { autoOt } = computeHours(start, end);
+                    const finalOt = explicitOt !== null ? explicitOt : autoOt;
+
+                    scheduleData[currentYearMonth][dayNum] = {
+                        type: 'work',
+                        start,
+                        end,
+                        pos,
+                        ot: finalOt
+                    };
+                    importedCount++;
+                }
+            });
+
+            return importedCount;
+        }
+
+        function handleExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                loadedWorkbook = XLSX.read(data, { type: 'array' });
+
+                if (loadedWorkbook.SheetNames.length > 1) {
+                    const sel = document.getElementById('workbookSheetSelect');
+                    sel.innerHTML = loadedWorkbook.SheetNames.map(name => `<option value="${name}">${name}</option>`).join('');
+                    document.getElementById('sheetSelectorBox').classList.remove('hidden');
+                } else {
+                    importFromSheetName(loadedWorkbook.SheetNames[0]);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processSelectedSheet() {
+            const sheetName = document.getElementById('workbookSheetSelect').value;
+            importFromSheetName(sheetName);
+        }
+
+        function importFromSheetName(sheetName) {
+            const worksheet = loadedWorkbook.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true });
+            const count = parseRowsIntoSchedule(rows);
+
+            if (count > 0) {
+                persistData();
+                closeModal('importModal');
+                loadMonthData();
+                alert(`นำเข้าข้อมูลสำเร็จ ${count} วัน!`);
+            } else {
+                alert("ไม่พบข้อมูลตารางกะงานในชีตนี้ (กรุณาตรวจสอบว่ามีคอลัมน์ วันที่, เข้างาน, เลิกงาน)");
+            }
+        }
+
+        function handlePastedData() {
+            const text = document.getElementById('pasteDataArea').value.trim();
+            if (!text) return;
+
+            const lines = text.split(/\r?\n/);
+            const rows = lines.map(line => {
+                // Split by tab (from Excel/Sheets) or multiple spaces
+                if (line.includes('\t')) return line.split('\t');
+                return line.trim().split(/\s+/);
+            });
+
+            const count = parseRowsIntoSchedule(rows);
+            if (count > 0) {
+                persistData();
+                document.getElementById('pasteDataArea').value = '';
+                closeModal('importModal');
+                loadMonthData();
+                alert(`นำเข้าข้อมูลสำเร็จ ${count} วัน!`);
+            } else {
+                alert("ไม่สามารถอ่านข้อมูลได้ กรุณาก๊อปปี้แถวที่มี วันที่ เข้างาน เลิกงาน ตำแหน่ง มาวางครับ");
+            }
         }
 
         // --- Single Day Modal Logic ---
@@ -804,7 +1027,14 @@
             localStorage.setItem('shiftApp_data', JSON.stringify(scheduleData));
         }
 
-        // --- Demo Data matching the user's spreadsheet ---
+        function clearCurrentMonth() {
+            if (!confirm("ต้องการล้างข้อมูลทั้งหมดของเดือนนี้ใช่หรือไม่?")) return;
+            scheduleData[currentYearMonth] = {};
+            persistData();
+            loadMonthData();
+        }
+
+        // --- Demo Data ---
         function loadDemoData(confirmOverwrite = true) {
             if (confirmOverwrite && !confirm("ต้องการใส่ข้อมูลตัวอย่างลงในเดือนนี้ใช่หรือไม่?")) return;
 
@@ -853,34 +1083,37 @@
             loadMonthData();
         }
 
-        // --- Export CSV ---
-        function exportCSV() {
+        // --- Export Real Excel (.xlsx) ---
+        function exportExcel() {
             const [year, month] = currentYearMonth.split('-').map(Number);
             const daysInMonth = getDaysInMonth(year, month);
             const records = scheduleData[currentYearMonth] || {};
 
-            let csv = "\uFEFFวันที่,วัน,เข้างาน,เลิกงาน,ตำแหน่ง,ชั่วโมงปกติ,OT (ชม.),ค่าแรงปกติ (บาท),ค่า OT (บาท),รวมรับ (บาท)\n";
+            const wsData = [
+                [`ตารางทำงาน ${THAI_MONTHS[month - 1]} ${year + 543}`],
+                ["วันที่", "วัน", "เข้างาน", "เลิกงาน", "ตำแหน่ง", "ชม.ทำงาน", "OT (ชม.)", "ค่าแรงปกติ (บาท)", "ค่า OT (บาท)", "รวมรับ (บาท)"]
+            ];
+
             for (let d = 1; d <= daysInMonth; d++) {
                 const dow = THAI_DAYS_SHORT[new Date(year, month - 1, d).getDay()];
                 const rec = records[d];
                 if (!rec) {
-                    csv += `${d},${dow},-,-,-,-,-,-,-,-\n`;
+                    wsData.push([d, dow, "", "", "", "", "", "", "", ""]);
                 } else if (rec.type === 'off') {
-                    csv += `${d},${dow},หยุด,หยุด,-,-,-,0,0,0\n`;
+                    wsData.push([d, dow, "หยุด", "หยุด", "-", 0, 0, 0, 0, 0]);
                 } else {
                     const { reg } = computeHours(rec.start, rec.end);
                     const ot = rec.ot || 0;
                     const regPay = reg * settings.hourlyRate;
                     const otPay = ot * settings.otRate;
-                    csv += `${d},${dow},${rec.start},${rec.end},${rec.pos || '-'},${reg},${ot},${regPay.toFixed(2)},${otPay.toFixed(2)},${(regPay + otPay).toFixed(2)}\n`;
+                    wsData.push([d, dow, rec.start, rec.end, rec.pos || "-", reg, ot, regPay, otPay, regPay + otPay]);
                 }
             }
 
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `ตารางกะงาน_${THAI_MONTHS[month - 1]}_${year + 543}.csv`;
-            link.click();
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            XLSX.utils.book_append_sheet(wb, ws, `${THAI_MONTHS[month - 1]}`);
+            XLSX.writeFile(wb, `ตารางกะงาน_${THAI_MONTHS[month - 1]}_${year + 543}.xlsx`);
         }
     </script>
 </body>
