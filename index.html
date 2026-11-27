@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ตารางกะงาน & คำนวณวันเงินออก</title>
+    <title>ตารางกะงาน & คำนวณวันเงินออก (2026)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -36,7 +36,7 @@
                 </div>
                 <div>
                     <h1 class="font-bold text-slate-800 text-base sm:text-lg leading-tight">ตารางกะงาน & เงินออก</h1>
-                    <p class="text-[11px] text-slate-500">ปกติ <span id="headerHourlyRate" class="font-semibold text-sky-600">50</span> บ./ชม. • OT <span id="headerOtRate" class="font-semibold text-orange-500">75.00</span> บ./ชม.</p>
+                    <p class="text-[11px] text-slate-500">ปกติ <span id="headerHourlyRate" class="font-semibold text-sky-600">52</span> บ./ชม. • OT <span id="headerOtRate" class="font-semibold text-orange-500">79.50</span> บ./ชม.</p>
                 </div>
             </div>
 
@@ -157,7 +157,7 @@
                 </span>
                 <div class="flex items-center gap-3 no-print">
                     <button onclick="resetToExcelData()" class="text-xs text-sky-600 hover:underline font-medium">
-                        <i class="fa-solid fa-rotate-right mr-1"></i>รีเซ็ตตาม FARAAA.xlsx
+                        <i class="fa-solid fa-rotate-right mr-1"></i>รีเซ็ตข้อมูลปี 2026
                     </button>
                 </div>
             </div>
@@ -188,7 +188,7 @@
         <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-xl space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
-                    <h3 class="font-bold text-slate-800 text-lg" id="modalDayTitle">วันที่ 1 มกราคม</h3>
+                    <h3 class="font-bold text-slate-800 text-lg" id="modalDayTitle">วันที่ 1</h3>
                     <p class="text-xs text-slate-500">เลือกกะเวลาสำเร็จรูป หรือตั้งค่าเอง</p>
                 </div>
                 <button onclick="closeModal('dayModal')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center">
@@ -422,9 +422,9 @@
             "10-13", "10-23", "12-05", "12-10", "12-31"
         ];
 
-        // Pre-loaded data from FARAAA.xlsx ("ตารางหมาน้อย")
-        const EXCEL_IMPORTED_DATA = {
-            "2025-01": {
+        // Schedule data for year 2026 imported from FARAAA.xlsx ("ตารางหมาน้อย")
+        const EXCEL_2026_DATA = {
+            "2026-01": {
                 "12": {"type": "work", "start": "11:00", "end": "20:00", "pos": "", "reg": 8.0, "ot": 0.0},
                 "13": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
                 "14": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
@@ -446,7 +446,7 @@
                 "30": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
                 "31": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0}
             },
-            "2025-02": {
+            "2026-02": {
                 "1": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
                 "2": {"type": "work", "start": "12:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 1.0},
                 "3": {"type": "work", "start": "11:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 2.0},
@@ -476,7 +476,7 @@
                 "27": {"type": "work", "start": "11:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 2.0},
                 "28": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0}
             },
-            "2025-03": {
+            "2026-03": {
                 "1": {"type": "work", "start": "09:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 0.0},
                 "2": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
                 "3": {"type": "work", "start": "08:00", "end": "16:00", "pos": "", "reg": 7.0, "ot": 0.0},
@@ -506,7 +506,7 @@
                 "30": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
                 "31": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5}
             },
-            "2025-04": {
+            "2026-04": {
                 "1": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
                 "2": {"type": "off"},
                 "3": {"type": "work", "start": "08:00", "end": "17:30", "pos": "", "reg": 8.0, "ot": 0.5},
@@ -538,9 +538,9 @@
                 "29": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
                 "30": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0}
             },
-            "2025-05": {
+            "2026-05": {
                 "1": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
-                "2": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "2": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 30.0},
                 "3": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
                 "4": {"type": "off"},
                 "5": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
@@ -553,7 +553,7 @@
                 "12": {"type": "off"},
                 "13": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
                 "14": {"type": "work", "start": "08:00", "end": "21:00", "pos": "", "reg": 8.0, "ot": 4.0},
-                "15": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 30.0},
+                "15": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
                 "16": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
                 "17": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 1.0},
                 "18": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
@@ -571,7 +571,7 @@
                 "30": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
                 "31": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0}
             },
-            "2025-06": {
+            "2026-06": {
                 "1": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
                 "2": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
                 "3": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
@@ -603,7 +603,7 @@
                 "29": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
                 "30": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0}
             },
-            "2025-07": {
+            "2026-07": {
                 "1": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
                 "2": {"type": "off"},
                 "3": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
@@ -764,12 +764,13 @@
                 "27": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
                 "28": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
                 "29": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0}
-            }
+            },
+            "2026-12": {}
         };
 
         let currentYearMonth = "";
         let scheduleData = {};
-        let customRatesByYM = {}; // { "2025-01": { hourlyRate: 50, otRate: 75 }, ... }
+        let customRatesByYM = {};
         let presets = {
             positions: ["SB", "CFC", "LOB"],
             shifts: ["07:00-16:00", "08:00-17:00", "13:30-22:30", "14:00-23:00", "12:00-22:00", "11:00-20:00", "10:00-21:00", "07:00-17:00"]
@@ -783,11 +784,11 @@
                 return customRatesByYM[ym];
             }
             const [y, m] = ym.split('-').map(Number);
-            // Jan - Jul 2568 (2025-01 to 2025-07): 50/hr, OT 75/hr
-            if (y === 2025 && m >= 1 && m <= 7) {
+            // Jan - Jul 2026 (2026-01 to 2026-07): 50/hr, OT 75/hr
+            if (y === 2026 && m >= 1 && m <= 7) {
                 return { hourlyRate: 50, otRate: 75 };
             }
-            // Default / later period: 52/hr, OT 79.50/hr
+            // Aug 2026 onwards: 52/hr, OT 79.50/hr
             return { hourlyRate: 52, otRate: 79.50 };
         }
 
@@ -796,31 +797,30 @@
         }
 
         window.onload = () => {
-            const savedData = localStorage.getItem('shiftApp_data_faraaa_v1');
-            const savedRates = localStorage.getItem('shiftApp_rates_faraaa_v1');
-            const savedPresets = localStorage.getItem('shiftApp_presets_faraaa_v1');
+            const savedData = localStorage.getItem('shiftApp_data_2026_v1');
+            const savedRates = localStorage.getItem('shiftApp_rates_2026_v1');
+            const savedPresets = localStorage.getItem('shiftApp_presets_2026_v1');
 
             if (savedData) {
                 scheduleData = JSON.parse(savedData);
             } else {
-                scheduleData = JSON.parse(JSON.stringify(EXCEL_IMPORTED_DATA));
+                scheduleData = JSON.parse(JSON.stringify(EXCEL_2026_DATA));
                 persistData();
             }
 
             if (savedRates) customRatesByYM = JSON.parse(savedRates);
             if (savedPresets) presets = JSON.parse(savedPresets);
 
-            // Start at 2025-01 (มกราคม 2568) as requested, easily switchable to any month
-            document.getElementById('monthPicker').value = "2025-01";
+            document.getElementById('monthPicker').value = "2026-11";
             loadMonthData();
         };
 
         function resetToExcelData() {
-            if (!confirm("ต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นข้อมูลจากไฟล์ FARAAA.xlsx และเรทตามช่วงเวลาใช่หรือไม่?")) return;
-            scheduleData = JSON.parse(JSON.stringify(EXCEL_IMPORTED_DATA));
+            if (!confirm("ต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นข้อมูลปี 2026 จากไฟล์ FARAAA.xlsx ใช่หรือไม่?")) return;
+            scheduleData = JSON.parse(JSON.stringify(EXCEL_2026_DATA));
             customRatesByYM = {};
             persistData();
-            localStorage.removeItem('shiftApp_rates_faraaa_v1');
+            localStorage.removeItem('shiftApp_rates_2026_v1');
             loadMonthData();
         }
 
@@ -889,7 +889,7 @@
 
             document.getElementById('headerHourlyRate').textContent = rate.hourlyRate;
             document.getElementById('headerOtRate').textContent = rate.otRate.toFixed(2);
-            document.getElementById('monthNameDisplay').textContent = `${THAI_MONTHS[month - 1]} ${year + 543}`;
+            document.getElementById('monthNameDisplay').textContent = `${THAI_MONTHS[month - 1]} ${year}`;
             document.getElementById('c2Title').textContent = `วีค 2 • วันที่ 16 – ${daysInMonth}`;
 
             const p1 = calculateSmartPayday(year, month, 15);
@@ -1371,8 +1371,8 @@
             presets.positions = document.getElementById('setPositions').value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
             presets.shifts = document.getElementById('setShifts').value.split(',').map(s => s.trim()).filter(s => s.includes('-'));
 
-            localStorage.setItem('shiftApp_rates_faraaa_v1', JSON.stringify(customRatesByYM));
-            localStorage.setItem('shiftApp_presets_faraaa_v1', JSON.stringify(presets));
+            localStorage.setItem('shiftApp_rates_2026_v1', JSON.stringify(customRatesByYM));
+            localStorage.setItem('shiftApp_presets_2026_v1', JSON.stringify(presets));
             closeModal('settingsModal');
             loadMonthData();
         }
@@ -1382,7 +1382,7 @@
         }
 
         function persistData() {
-            localStorage.setItem('shiftApp_data_faraaa_v1', JSON.stringify(scheduleData));
+            localStorage.setItem('shiftApp_data_2026_v1', JSON.stringify(scheduleData));
         }
 
         // --- Export Real Excel (.xlsx) ---
@@ -1393,7 +1393,7 @@
             const rate = getRateForYM(currentYearMonth);
 
             const wsData = [
-                [`ตารางทำงาน ${THAI_MONTHS[month - 1]} ${year + 543} (เรทปกติ ${rate.hourlyRate}/ชม. | OT ${rate.otRate}/ชม.)`],
+                [`ตารางทำงาน ${THAI_MONTHS[month - 1]} ${year} (เรทปกติ ${rate.hourlyRate}/ชม. | OT ${rate.otRate}/ชม.)`],
                 ["วันที่", "วัน", "เข้างาน", "เลิกงาน", "ตำแหน่ง", "ชม.ทำงาน", "OT (ชม.)", "ค่าแรงปกติ (บาท)", "ค่า OT (บาท)", "รวมรับ (บาท)"]
             ];
 
@@ -1416,7 +1416,7 @@
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(wsData);
             XLSX.utils.book_append_sheet(wb, ws, `${THAI_MONTHS[month - 1]}`);
-            XLSX.writeFile(wb, `ตารางกะงาน_${THAI_MONTHS[month - 1]}_${year + 543}.xlsx`);
+            XLSX.writeFile(wb, `ตารางกะงาน_${THAI_MONTHS[month - 1]}_${year}.xlsx`);
         }
     </script>
 </body>
