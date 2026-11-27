@@ -1,844 +1,887 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>เป๋าตังค์จด - บันทึกรายรับรายจ่าย</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg-page: #EEF2F6;
-      --card-bg: #FFFFFF;
-      --hero-bg: #0B192C;
-      --text-main: #0F172A;
-      --text-sub: #475569;
-    }
-
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body {
-      font-family: 'Prompt', sans-serif;
-      background-color: var(--bg-page);
-      color: var(--text-main);
-      margin: 0;
-      padding: 0;
-      overflow-x: hidden;
-    }
-
-    .font-num {
-      font-family: 'Chakra Petch', 'Prompt', sans-serif;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* กรอบตัดมุมสไตล์เกราะอเวนเจอร์ */
-    .armor-card {
-      clip-path: polygon(
-        14px 0%, calc(100% - 14px) 0%,
-        100% 14px, 100% calc(100% - 14px),
-        calc(100% - 14px) 100%, 14px 100%,
-        0% calc(100% - 14px), 0% 14px
-      );
-    }
-
-    .armor-btn {
-      clip-path: polygon(
-        10px 0%, calc(100% - 10px) 0%,
-        100% 10px, 100% calc(100% - 10px),
-        calc(100% - 10px) 100%, 10px 100%,
-        0% calc(100% - 10px), 0% 10px
-      );
-    }
-
-    @keyframes spinSlow {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    @keyframes spinReverse {
-      from { transform: rotate(360deg); }
-      to { transform: rotate(0deg); }
-    }
-
-    .arc-spin-slow {
-      transform-origin: 100px 100px;
-      animation: spinSlow 24s linear infinite;
-    }
-
-    .arc-spin-rev {
-      transform-origin: 100px 100px;
-      animation: spinReverse 16s linear infinite;
-    }
-
-    input[type="number"]::-webkit-inner-spin-button,
-    input[type="number"]::-webkit-outer-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-    input[type="number"] {
-      -moz-appearance: textfield;
-    }
-
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตารางกะงาน & คำนวณวันเงินออก</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #F4F6F9;
+            color: #1E293B;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #F1F5F9; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; }
+            .print-shadow-none { box-shadow: none !important; border: 1px solid #cbd5e1 !important; }
+        }
+    </style>
 </head>
-<body class="min-h-screen pb-10">
+<body class="pb-20">
 
-  <div class="max-w-md mx-auto px-3.5 pt-3 space-y-3.5">
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
+        <div class="max-w-4xl mx-auto px-3 py-3 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <div class="w-9 h-9 rounded-xl bg-sky-500 text-white flex items-center justify-center shadow-sm">
+                    <i class="fa-solid fa-calendar-check text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-800 text-base sm:text-lg leading-tight">ตารางกะงาน & เงินออก</h1>
+                    <p class="text-[11px] text-slate-500">ปกติ <span id="headerHourlyRate" class="font-semibold text-sky-600">52</span> บ./ชม. • OT <span id="headerOtRate" class="font-semibold text-orange-500">79.50</span> บ./ชม.</p>
+                </div>
+            </div>
 
-    <!-- แถบด้านบน: ชื่อแอป & นาฬิกาเวลาประเทศไทย -->
-    <header class="bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-sm shrink-0">
-          <!-- ไอคอนแกนพลังงาน -->
-          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <polygon points="12 3 21 19 3 19" stroke-linejoin="round" />
-            <circle cx="12" cy="14" r="2.2" fill="currentColor" />
-          </svg>
+            <!-- Month Selector -->
+            <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-lg bg-white text-slate-600 hover:bg-sky-50 hover:text-sky-600 flex items-center justify-center shadow-sm transition">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                </button>
+                <input type="month" id="monthPicker" onchange="loadMonthData()" class="bg-transparent text-sm font-semibold text-slate-700 px-1 focus:outline-none cursor-pointer">
+                <button onclick="changeMonth(1)" class="w-8 h-8 rounded-lg bg-white text-slate-600 hover:bg-sky-50 hover:text-sky-600 flex items-center justify-center shadow-sm transition">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+            </div>
         </div>
-        <div>
-          <h1 class="text-lg font-bold text-slate-900 leading-tight">เป๋าตังค์จด</h1>
-          <div class="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-            <span>เวลาประเทศไทย</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="text-right">
-        <div id="thai-clock" class="font-num text-xl font-bold text-slate-900 leading-none tracking-wide">00:00:00</div>
-        <div id="thai-date" class="text-xs font-medium text-slate-600 mt-1">กำลังโหลดวันที่...</div>
-      </div>
     </header>
 
-    <!-- การ์ดหลัก: เงินคงเหลือ & สัญลักษณ์อเวนเจอร์ -->
-    <section class="relative bg-[#0B192C] text-white armor-card p-5 shadow-md overflow-hidden">
-      <!-- กราฟิก Arc Reactor ด้านหลัง (โปร่งบาง ไม่กวนตัวหนังสือ) -->
-      <div class="pointer-events-none absolute -right-8 -top-8 w-52 h-52 opacity-25">
-        <svg viewBox="0 0 200 200" class="w-full h-full">
-          <circle id="arc-outer-ring" cx="100" cy="100" r="88" fill="none" stroke="#38BDF8" stroke-width="3" stroke-dasharray="18 8" class="arc-spin-slow" />
-          <circle id="arc-mid-ring" cx="100" cy="100" r="66" fill="none" stroke="#38BDF8" stroke-width="5" stroke-dasharray="28 12" class="arc-spin-rev" />
-          <polygon id="arc-tri" points="100,45 148,132 52,132" fill="none" stroke="#38BDF8" stroke-width="3.5" />
-          <circle id="arc-core" cx="100" cy="103" r="18" fill="#38BDF8" />
-        </svg>
-      </div>
+    <main class="max-w-4xl mx-auto px-3 pt-4 space-y-4">
 
-      <!-- แถวเลือกฮีโร่ & ปุ่มซ่อนยอด -->
-      <div class="relative z-10 flex items-center justify-between gap-2 mb-3">
-        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          <button type="button" onclick="setHero('ironman')" id="hero-ironman" class="hero-pill px-2.5 py-1 rounded-lg text-xs font-semibold border transition flex items-center gap-1">
-            <span>🦾</span><span>ไอรอนแมน</span>
-          </button>
-          <button type="button" onclick="setHero('captain')" id="hero-captain" class="hero-pill px-2.5 py-1 rounded-lg text-xs font-semibold border transition flex items-center gap-1">
-            <span>🛡️</span><span>กัปตัน</span>
-          </button>
-          <button type="button" onclick="setHero('thor')" id="hero-thor" class="hero-pill px-2.5 py-1 rounded-lg text-xs font-semibold border transition flex items-center gap-1">
-            <span>⚡</span><span>ธอร์</span>
-          </button>
-          <button type="button" onclick="setHero('panther')" id="hero-panther" class="hero-pill px-2.5 py-1 rounded-lg text-xs font-semibold border transition flex items-center gap-1">
-            <span>🐾</span><span>แพนเธอร์</span>
-          </button>
+        <!-- Action Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 no-print">
+            <button onclick="openBulkModal()" class="flex-1 sm:flex-none bg-sky-500 hover:bg-sky-600 active:scale-95 text-white font-medium text-sm px-4 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>จัดกะล่วงหน้า (ทีละหลายวัน)</span>
+            </button>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button onclick="openSettingsModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs sm:text-sm px-3 py-2.5 rounded-xl shadow-sm transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders text-orange-500"></i>
+                    <span>ตั้งค่ากะ/เรทค่าแรง</span>
+                </button>
+                <button onclick="exportCSV()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs sm:text-sm px-3 py-2.5 rounded-xl shadow-sm transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-excel text-emerald-600"></i>
+                    <span>โหลด Excel</span>
+                </button>
+            </div>
         </div>
 
-        <button type="button" onclick="toggleHideBalance()" id="btn-hide-balance" class="shrink-0 bg-white/15 hover:bg-white/25 text-white px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
-          <span id="eye-icon">👁️</span>
-          <span id="eye-text">ซ่อนยอด</span>
-        </button>
-      </div>
-
-      <!-- ยอดเงินคงเหลือ -->
-      <div class="relative z-10 my-2">
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-slate-200">เงินคงเหลือสุทธิ</span>
-          <span id="energy-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-500/25 text-sky-200 border border-sky-400/40">
-            พลังงานเต็มเปี่ยม
-          </span>
-        </div>
-        <div id="balance-display" class="font-num text-4xl font-bold text-white tracking-tight mt-1">
-          ฿0.00
-        </div>
-      </div>
-
-      <!-- กล่องสรุปรายรับ / รายจ่าย แยกชัดเจน -->
-      <div class="relative z-10 grid grid-cols-2 gap-2.5 mt-4">
-        <div class="bg-white/10 border border-white/15 rounded-xl px-3.5 py-2.5">
-          <div class="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
-            <span>▲</span>
-            <span>รายรับรวม</span>
-          </div>
-          <div id="income-display" class="font-num text-xl font-bold text-white mt-0.5">฿0</div>
-        </div>
-
-        <div class="bg-white/10 border border-white/15 rounded-xl px-3.5 py-2.5">
-          <div class="flex items-center gap-1.5 text-xs font-semibold text-rose-300">
-            <span>▼</span>
-            <span>รายจ่ายรวม</span>
-          </div>
-          <div id="expense-display" class="font-num text-xl font-bold text-white mt-0.5">฿0</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- กล่องจดรายการใหม่ (จบในหน้าเดียว ใช้งานง่าย) -->
-    <section class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3.5">
-      <div class="flex items-center justify-between">
-        <h2 id="form-title" class="text-base font-bold text-slate-900 flex items-center gap-2">
-          <span class="w-2 h-5 bg-red-600 rounded-sm inline-block"></span>
-          <span>จดรายการใหม่</span>
-        </h2>
-
-        <button type="button" onclick="toggleCustomTime()" class="text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition">
-          <span>🕒</span>
-          <span id="time-toggle-label">เวลาตอนนี้</span>
-        </button>
-      </div>
-
-      <!-- ช่องแก้เวลาไทยย้อนหลัง (พับเก็บได้) -->
-      <div id="custom-time-box" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-700">เลือกวันที่และเวลาไทย</span>
-          <button type="button" onclick="resetToNowThai()" class="text-xs font-bold text-blue-700 hover:underline">
-            ตั้งเป็นเวลาตอนนี้
-          </button>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <input type="date" id="input-date" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-900" />
-          <input type="time" id="input-time" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-900" />
-        </div>
-      </div>
-
-      <!-- ปุ่มสลับ จ่ายออก / รับเข้า -->
-      <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1.5 rounded-xl">
-        <button type="button" id="type-expense" onclick="setTxType('expense')" class="py-2.5 rounded-lg text-base font-bold transition flex items-center justify-center gap-1.5 bg-red-600 text-white shadow-sm">
-          <span>➖</span>
-          <span>จ่ายออก</span>
-        </button>
-        <button type="button" id="type-income" onclick="setTxType('income')" class="py-2.5 rounded-lg text-base font-bold transition flex items-center justify-center gap-1.5 text-slate-700 hover:bg-white/60">
-          <span>➕</span>
-          <span>รับเข้า</span>
-        </button>
-      </div>
-
-      <!-- ช่องกรอกจำนวนเงินขนาดใหญ่ -->
-      <div class="bg-slate-50 border-2 border-slate-300 focus-within:border-slate-900 rounded-2xl px-4 py-3 flex items-center justify-between transition">
-        <span class="text-2xl font-bold text-slate-500">฿</span>
-        <input
-          type="number"
-          inputmode="decimal"
-          step="any"
-          id="input-amount"
-          placeholder="0"
-          class="font-num w-full text-right text-4xl font-bold text-slate-900 bg-transparent outline-none"
-        />
-      </div>
-
-      <!-- ปุ่มบวกเงินลัด -->
-      <div class="grid grid-cols-5 gap-1.5">
-        <button type="button" onclick="addQuickAmount(50)" class="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-sm font-bold text-slate-800 transition">+50</button>
-        <button type="button" onclick="addQuickAmount(100)" class="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-sm font-bold text-slate-800 transition">+100</button>
-        <button type="button" onclick="addQuickAmount(500)" class="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-sm font-bold text-slate-800 transition">+500</button>
-        <button type="button" onclick="addQuickAmount(1000)" class="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-sm font-bold text-slate-800 transition">+1,000</button>
-        <button type="button" onclick="clearAmount()" class="py-2 rounded-xl bg-amber-100 hover:bg-amber-200 active:scale-95 text-sm font-bold text-amber-900 transition">ล้าง</button>
-      </div>
-
-      <!-- หมวดหมู่ 6 หมวด เข้าใจง่าย -->
-      <div>
-        <div class="text-xs font-bold text-slate-600 mb-2">เลือกหมวดหมู่</div>
-        <div id="category-grid" class="grid grid-cols-3 gap-2"></div>
-      </div>
-
-      <!-- ช่องบันทึกช่วยจำ (ไม่บังคับ) -->
-      <div>
-        <input
-          type="text"
-          id="input-note"
-          placeholder="จดรายละเอียดเพิ่ม เช่น ข้าวมันไก่, ค่าน้ำมัน (ไม่ใส่ก็ได้)"
-          class="w-full bg-slate-50 border border-slate-300 focus:border-slate-900 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none"
-        />
-      </div>
-
-      <!-- ปุ่มบันทึกหลัก -->
-      <div class="flex gap-2 pt-1">
-        <button type="button" id="btn-cancel-edit" onclick="cancelEdit()" class="hidden px-4 py-3.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-base transition">
-          ยกเลิก
-        </button>
-        <button type="button" id="btn-submit" onclick="saveTransaction()" class="w-full armor-btn bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-bold text-lg py-3.5 shadow-sm transition flex items-center justify-center gap-2">
-          <span>✔</span>
-          <span id="submit-label">บันทึกเลย</span>
-        </button>
-      </div>
-    </section>
-
-    <!-- ส่วนประวัติรายการล่าสุด -->
-    <section class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
-      <div class="flex items-center justify-between gap-2">
-        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-          <span class="w-2 h-5 bg-slate-900 rounded-sm inline-block"></span>
-          <span>ประวัติรายการ</span>
-        </h2>
-
-        <!-- ตัวกรองช่วงเวลา -->
-        <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-bold">
-          <button type="button" onclick="setFilter('today')" id="filter-today" class="px-2.5 py-1 rounded-lg transition">วันนี้</button>
-          <button type="button" onclick="setFilter('month')" id="filter-month" class="px-2.5 py-1 rounded-lg transition">เดือนนี้</button>
-          <button type="button" onclick="setFilter('all')" id="filter-all" class="px-2.5 py-1 rounded-lg transition">ทั้งหมด</button>
-        </div>
-      </div>
-
-      <!-- รายการธุรกรรม -->
-      <div id="transaction-list" class="space-y-2.5"></div>
-
-      <!-- ปุ่มจัดการข้อมูลด้านล่าง -->
-      <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
-        <button type="button" onclick="loadSampleData()" class="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl transition">
-          + โหลดข้อมูลตัวอย่าง
-        </button>
-
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="exportCSV()" class="text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-xl transition">
-            ⬇ ดาวน์โหลด Excel
-          </button>
-          <button type="button" onclick="clearAllData()" class="text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-2 rounded-xl transition">
-            🗑️ ล้างข้อมูล
-          </button>
-        </div>
-      </div>
-    </section>
-
-  </div>
-
-  <!-- แจ้งเตือนมุมล่าง (Toast) -->
-  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-lg opacity-0 pointer-events-none transition-opacity duration-200 z-50 whitespace-nowrap">
-    บันทึกเรียบร้อย
-  </div>
-
-  <script>
-    const STORAGE_KEY = 'paotang_avengers_simple_v1';
-    const HERO_KEY = 'paotang_avengers_hero_v1';
-    const HIDE_KEY = 'paotang_avengers_hide_v1';
-
-    const CATEGORIES = [
-      { id: 'food', name: 'อาหาร/เครื่องดื่ม', icon: '🍔' },
-      { id: 'travel', name: 'เดินทาง/น้ำมัน', icon: '🚗' },
-      { id: 'shop', name: 'ซื้อของใช้', icon: '🛍️' },
-      { id: 'bill', name: 'บิล/ค่าเน็ต', icon: '📱' },
-      { id: 'salary', name: 'เงินเดือน/รายรับ', icon: '💰' },
-      { id: 'other', name: 'อื่นๆ', icon: '⚡' }
-    ];
-
-    const HERO_THEMES = {
-      ironman: { primary: '#DC2626', accent: '#38BDF8', label: 'ไอรอนแมน' },
-      captain: { primary: '#1D4ED8', accent: '#60A5FA', label: 'กัปตัน' },
-      thor:    { primary: '#0284C7', accent: '#FACC15', label: 'ธอร์' },
-      panther: { primary: '#6D28D9', accent: '#C084FC', label: 'แพนเธอร์' }
-    };
-
-    let transactions = [];
-    let currentType = 'expense';
-    let selectedCategory = 'food';
-    let currentFilter = 'month';
-    let editingId = null;
-    let hideBalance = false;
-    let currentHero = 'ironman';
-
-    // คืนค่าเวลาประเทศไทยปัจจุบัน (UTC+7)
-    function getThaiNowParts() {
-      const now = new Date();
-      const fmt = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Bangkok',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
-      const parts = {};
-      fmt.formatToParts(now).forEach(p => { parts[p.type] = p.value; });
-      const hour = parts.hour === '24' ? '00' : parts.hour;
-      return {
-        dateStr: `${parts.year}-${parts.month}-${parts.day}`,
-        timeStr: `${hour}:${parts.minute}`,
-        clockStr: `${hour}:${parts.minute}:${parts.second}`,
-        yearMonth: `${parts.year}-${parts.month}`
-      };
-    }
-
-    function formatThaiDateLabel(dateStr) {
-      if (!dateStr) return '';
-      const [y, m, d] = dateStr.split('-').map(Number);
-      const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-      return `${d} ${months[m - 1]} ${y + 543}`;
-    }
-
-    function updateThaiClock() {
-      const now = new Date();
-      const parts = getThaiNowParts();
-      document.getElementById('thai-clock').textContent = parts.clockStr;
-
-      const thaiFullDate = new Intl.DateTimeFormat('th-TH', {
-        timeZone: 'Asia/Bangkok',
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-      }).format(now);
-      document.getElementById('thai-date').textContent = thaiFullDate;
-    }
-
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      toast.textContent = msg;
-      toast.classList.remove('opacity-0');
-      clearTimeout(window._toastTimer);
-      window._toastTimer = setTimeout(() => {
-        toast.classList.add('opacity-0');
-      }, 2200);
-    }
-
-    function formatMoney(num, showDecimals = false) {
-      if (hideBalance) return '฿•••••';
-      return '฿' + Number(num).toLocaleString('th-TH', {
-        minimumFractionDigits: showDecimals ? 2 : 0,
-        maximumFractionDigits: 2
-      });
-    }
-
-    function setHero(heroKey) {
-      if (!HERO_THEMES[heroKey]) heroKey = 'ironman';
-      currentHero = heroKey;
-      localStorage.setItem(HERO_KEY, heroKey);
-
-      Object.keys(HERO_THEMES).forEach(k => {
-        const el = document.getElementById('hero-' + k);
-        if (k === heroKey) {
-          el.className = 'hero-pill px-2.5 py-1 rounded-lg text-xs font-bold border border-white bg-white text-slate-900 transition flex items-center gap-1 shadow-sm';
-        } else {
-          el.className = 'hero-pill px-2.5 py-1 rounded-lg text-xs font-semibold border border-white/25 bg-white/10 text-white hover:bg-white/20 transition flex items-center gap-1';
-        }
-      });
-
-      const theme = HERO_THEMES[heroKey];
-      document.getElementById('arc-outer-ring').setAttribute('stroke', theme.accent);
-      document.getElementById('arc-mid-ring').setAttribute('stroke', theme.accent);
-      document.getElementById('arc-tri').setAttribute('stroke', theme.accent);
-      document.getElementById('arc-core').setAttribute('fill', theme.accent);
-    }
-
-    function toggleHideBalance() {
-      hideBalance = !hideBalance;
-      localStorage.setItem(HIDE_KEY, hideBalance ? '1' : '0');
-      document.getElementById('eye-icon').textContent = hideBalance ? '🙈' : '👁️';
-      document.getElementById('eye-text').textContent = hideBalance ? 'แสดงยอด' : 'ซ่อนยอด';
-      renderAll();
-    }
-
-    function toggleCustomTime() {
-      const box = document.getElementById('custom-time-box');
-      const isHidden = box.classList.contains('hidden');
-      if (isHidden) {
-        if (!document.getElementById('input-date').value) {
-          resetToNowThai();
-        }
-        box.classList.remove('hidden');
-      } else {
-        box.classList.add('hidden');
-      }
-    }
-
-    function resetToNowThai() {
-      const nowParts = getThaiNowParts();
-      document.getElementById('input-date').value = nowParts.dateStr;
-      document.getElementById('input-time').value = nowParts.timeStr;
-      document.getElementById('time-toggle-label').textContent = 'เวลาตอนนี้';
-    }
-
-    function setTxType(type) {
-      currentType = type;
-      const expBtn = document.getElementById('type-expense');
-      const incBtn = document.getElementById('type-income');
-      const submitBtn = document.getElementById('btn-submit');
-
-      if (type === 'expense') {
-        expBtn.className = 'py-2.5 rounded-lg text-base font-bold transition flex items-center justify-center gap-1.5 bg-red-600 text-white shadow-sm';
-        incBtn.className = 'py-2.5 rounded-lg text-base font-bold transition flex items-center justify-center gap-1.5 text-slate-700 hover:bg-white/60';
-        submitBtn.className = 'w-full armor-btn bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-bold text-lg py-3.5 shadow-sm transition flex items-center justify-center gap-2';
-        if (selectedCategory === 'salary') selectedCategory = 'food';
-      } else {
-        incBtn.className = 'py-2.5 rounded-lg text-base font-bold transition flex items-center justify-center gap-1.5 bg-emerald-600 text-white shadow-sm';
-        expBtn.className = 'py-2.5 rounded-lg text-base font-bold transition flex items-center justify-center gap-1.5 text-slate-700 hover:bg-white/60';
-        submitBtn.className = 'w-full armor-btn bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-lg py-3.5 shadow-sm transition flex items-center justify-center gap-2';
-        if (selectedCategory === 'food') selectedCategory = 'salary';
-      }
-      renderCategories();
-    }
-
-    function renderCategories() {
-      const grid = document.getElementById('category-grid');
-      grid.innerHTML = CATEGORIES.map(cat => {
-        const active = cat.id === selectedCategory;
-        const activeStyle = currentType === 'expense'
-          ? 'border-red-600 bg-red-50 text-red-900 font-bold ring-1 ring-red-600'
-          : 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold ring-1 ring-emerald-600';
-        const normalStyle = 'border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100 font-medium';
-
-        return `
-          <button type="button" onclick="selectCategory('${cat.id}')"
-            class="border rounded-xl py-2.5 px-2 flex flex-col items-center justify-center gap-1 text-center transition active:scale-95 ${active ? activeStyle : normalStyle}">
-            <span class="text-xl leading-none">${cat.icon}</span>
-            <span class="text-xs leading-tight">${cat.name}</span>
-          </button>
-        `;
-      }).join('');
-    }
-
-    function selectCategory(id) {
-      selectedCategory = id;
-      renderCategories();
-    }
-
-    function addQuickAmount(val) {
-      const input = document.getElementById('input-amount');
-      const current = parseFloat(input.value) || 0;
-      input.value = current + val;
-    }
-
-    function clearAmount() {
-      document.getElementById('input-amount').value = '';
-      document.getElementById('input-amount').focus();
-    }
-
-    function saveTransaction() {
-      const amountVal = parseFloat(document.getElementById('input-amount').value);
-      if (!amountVal || amountVal <= 0) {
-        showToast('กรุณาใส่จำนวนเงินก่อนบันทึก');
-        document.getElementById('input-amount').focus();
-        return;
-      }
-
-      const nowParts = getThaiNowParts();
-      const customBoxOpen = !document.getElementById('custom-time-box').classList.contains('hidden');
-      const dateStr = (customBoxOpen && document.getElementById('input-date').value)
-        ? document.getElementById('input-date').value
-        : (editingId ? document.getElementById('input-date').value : nowParts.dateStr);
-      const timeStr = (customBoxOpen && document.getElementById('input-time').value)
-        ? document.getElementById('input-time').value
-        : (editingId ? document.getElementById('input-time').value : nowParts.timeStr);
-
-      const note = document.getElementById('input-note').value.trim();
-
-      if (editingId) {
-        const idx = transactions.findIndex(t => t.id === editingId);
-        if (idx !== -1) {
-          transactions[idx] = {
-            ...transactions[idx],
-            type: currentType,
-            amount: amountVal,
-            category: selectedCategory,
-            note,
-            date: dateStr,
-            time: timeStr
-          };
-        }
-        showToast('แก้ไขรายการเรียบร้อย');
-        cancelEdit();
-      } else {
-        transactions.unshift({
-          id: Date.now().toString(),
-          type: currentType,
-          amount: amountVal,
-          category: selectedCategory,
-          note,
-          date: dateStr,
-          time: timeStr
-        });
-        document.getElementById('input-amount').value = '';
-        document.getElementById('input-note').value = '';
-        document.getElementById('custom-time-box').classList.add('hidden');
-        document.getElementById('time-toggle-label').textContent = 'เวลาตอนนี้';
-        showToast(currentType === 'expense' ? 'บันทึกรายจ่ายแล้ว' : 'บันทึกรายรับแล้ว');
-      }
-
-      persistData();
-      renderAll();
-    }
-
-    function startEdit(id) {
-      const tx = transactions.find(t => t.id === id);
-      if (!tx) return;
-
-      editingId = id;
-      setTxType(tx.type);
-      selectedCategory = tx.category;
-      renderCategories();
-
-      document.getElementById('input-amount').value = tx.amount;
-      document.getElementById('input-note').value = tx.note || '';
-      document.getElementById('input-date').value = tx.date;
-      document.getElementById('input-time').value = tx.time;
-      document.getElementById('custom-time-box').classList.remove('hidden');
-      document.getElementById('time-toggle-label').textContent = `${formatThaiDateLabel(tx.date)} ${tx.time} น.`;
-
-      document.getElementById('form-title').innerHTML = `
-        <span class="w-2 h-5 bg-amber-500 rounded-sm inline-block"></span>
-        <span>แก้ไขรายการ</span>
-      `;
-      document.getElementById('submit-label').textContent = 'บันทึกการแก้ไข';
-      document.getElementById('btn-cancel-edit').classList.remove('hidden');
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function cancelEdit() {
-      editingId = null;
-      document.getElementById('input-amount').value = '';
-      document.getElementById('input-note').value = '';
-      document.getElementById('custom-time-box').classList.add('hidden');
-      document.getElementById('time-toggle-label').textContent = 'เวลาตอนนี้';
-      document.getElementById('form-title').innerHTML = `
-        <span class="w-2 h-5 bg-red-600 rounded-sm inline-block"></span>
-        <span>จดรายการใหม่</span>
-      `;
-      document.getElementById('submit-label').textContent = 'บันทึกเลย';
-      document.getElementById('btn-cancel-edit').classList.add('hidden');
-    }
-
-    function deleteTransaction(id) {
-      transactions = transactions.filter(t => t.id !== id);
-      if (editingId === id) cancelEdit();
-      persistData();
-      renderAll();
-      showToast('ลบรายการแล้ว');
-    }
-
-    function setFilter(filter) {
-      currentFilter = filter;
-      ['today', 'month', 'all'].forEach(f => {
-        const btn = document.getElementById('filter-' + f);
-        if (f === filter) {
-          btn.className = 'px-2.5 py-1 rounded-lg bg-slate-900 text-white shadow-sm transition';
-        } else {
-          btn.className = 'px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition';
-        }
-      });
-      renderList();
-    }
-
-    function getFilteredTransactions() {
-      const nowParts = getThaiNowParts();
-      const sorted = [...transactions].sort((a, b) => {
-        const keyA = `${a.date} ${a.time}`;
-        const keyB = `${b.date} ${b.time}`;
-        return keyB.localeCompare(keyA);
-      });
-
-      if (currentFilter === 'today') {
-        return sorted.filter(t => t.date === nowParts.dateStr);
-      }
-      if (currentFilter === 'month') {
-        return sorted.filter(t => t.date.startsWith(nowParts.yearMonth));
-      }
-      return sorted;
-    }
-
-    function renderSummary() {
-      let income = 0;
-      let expense = 0;
-      transactions.forEach(t => {
-        if (t.type === 'income') income += Number(t.amount);
-        else expense += Number(t.amount);
-      });
-      const balance = income - expense;
-
-      document.getElementById('balance-display').textContent = formatMoney(balance, true);
-      document.getElementById('income-display').textContent = formatMoney(income, false);
-      document.getElementById('expense-display').textContent = formatMoney(expense, false);
-
-      const badge = document.getElementById('energy-badge');
-      const arcCore = document.getElementById('arc-core');
-      const themeAccent = HERO_THEMES[currentHero].accent;
-
-      if (balance < 0) {
-        badge.textContent = 'รายจ่ายเกินรายรับ';
-        badge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-500/30 text-rose-200 border border-rose-400/50';
-        arcCore.setAttribute('fill', '#F43F5E');
-      } else if (income > 0 && expense / income > 0.75) {
-        badge.textContent = 'ใช้จ่ายไปเยอะแล้ว';
-        badge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/50';
-        arcCore.setAttribute('fill', '#F59E0B');
-      } else {
-        badge.textContent = 'การเงินคล่องตัว';
-        badge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-500/25 text-sky-200 border border-sky-400/40';
-        arcCore.setAttribute('fill', themeAccent);
-      }
-    }
-
-    function renderList() {
-      const listEl = document.getElementById('transaction-list');
-      const items = getFilteredTransactions();
-
-      if (items.length === 0) {
-        listEl.innerHTML = `
-          <div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-            <div class="text-3xl mb-1">📋</div>
-            <div class="text-sm font-bold text-slate-700">ยังไม่มีรายการในช่วงเวลานี้</div>
-            <div class="text-xs text-slate-500 mt-0.5">กรอกตัวเลขด้านบนแล้วกดบันทึกได้เลย</div>
-          </div>
-        `;
-        return;
-      }
-
-      listEl.innerHTML = items.map(tx => {
-        const cat = CATEGORIES.find(c => c.id === tx.category) || CATEGORIES[5];
-        const isInc = tx.type === 'income';
-        const amountClass = isInc ? 'text-emerald-700' : 'text-red-600';
-        const sign = isInc ? '+' : '-';
-        const title = tx.note ? tx.note : cat.name;
-        const subtitle = tx.note ? `${cat.name} • ` : '';
-
-        return `
-          <div class="bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-2.5 transition">
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-xl shrink-0 shadow-xs">
-                ${cat.icon}
-              </div>
-              <div class="min-w-0">
-                <div class="text-sm font-bold text-slate-900 truncate">${escapeHtml(title)}</div>
-                <div class="text-xs font-medium text-slate-600 mt-0.5">
-                  ${escapeHtml(subtitle)}${formatThaiDateLabel(tx.date)} เวลา ${tx.time} น.
+        <!-- Payday & Cycle Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <!-- Cycle 1: 1-15 -->
+            <div class="bg-white rounded-2xl p-4 border border-sky-200 shadow-sm print-shadow-none relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-sky-50 rounded-bl-full -z-0"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-sky-100 text-sky-700">
+                            วีค 1 • วันที่ 1 – 15
+                        </span>
+                        <div id="payday1Badge" class="text-right"></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mt-3 pt-2 border-t border-slate-100 text-center">
+                        <div>
+                            <p class="text-[11px] text-slate-500">ทำงาน / หยุด</p>
+                            <p class="font-bold text-slate-800 text-sm"><span id="c1WorkDays">0</span> วัน <span class="text-xs font-normal text-rose-500">(<span id="c1OffDays">0</span> หยุด)</span></p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] text-slate-500">ชั่วโมงปกติ + OT</p>
+                            <p class="font-bold text-sky-600 text-sm"><span id="c1RegHrs">0</span> <span class="text-orange-500">+ <span id="c1OtHrs">0</span> ชม.</span></p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] text-slate-500">ประมาณการรับ</p>
+                            <p class="font-bold text-emerald-600 text-sm" id="c1Income">฿0.00</p>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
 
-            <div class="flex items-center gap-2 shrink-0">
-              <div class="font-num text-base font-bold ${amountClass}">
-                ${hideBalance ? '฿•••' : `${sign}฿${Number(tx.amount).toLocaleString('th-TH')}`}
-              </div>
-              <button type="button" onclick="startEdit('${tx.id}')" title="แก้ไข" class="w-8 h-8 rounded-lg bg-white border border-slate-200 hover:bg-slate-200 flex items-center justify-center text-xs">
-                ✏️
-              </button>
-              <button type="button" onclick="deleteTransaction('${tx.id}')" title="ลบ" class="w-8 h-8 rounded-lg bg-white border border-slate-200 hover:bg-rose-100 flex items-center justify-center text-xs">
-                🗑️
-              </button>
+            <!-- Cycle 2: 16-End -->
+            <div class="bg-white rounded-2xl p-4 border border-orange-200 shadow-sm print-shadow-none relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-orange-50 rounded-bl-full -z-0"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-orange-100 text-orange-700" id="c2Title">
+                            วีค 2 • วันที่ 16 – 30
+                        </span>
+                        <div id="payday2Badge" class="text-right"></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mt-3 pt-2 border-t border-slate-100 text-center">
+                        <div>
+                            <p class="text-[11px] text-slate-500">ทำงาน / หยุด</p>
+                            <p class="font-bold text-slate-800 text-sm"><span id="c2WorkDays">0</span> วัน <span class="text-xs font-normal text-rose-500">(<span id="c2OffDays">0</span> หยุด)</span></p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] text-slate-500">ชั่วโมงปกติ + OT</p>
+                            <p class="font-bold text-sky-600 text-sm"><span id="c2RegHrs">0</span> <span class="text-orange-500">+ <span id="c2OtHrs">0</span> ชม.</span></p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] text-slate-500">ประมาณการรับ</p>
+                            <p class="font-bold text-emerald-600 text-sm" id="c2Income">฿0.00</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-        `;
-      }).join('');
-    }
+        </div>
 
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
+        <!-- Monthly Total Strip -->
+        <div class="bg-slate-800 text-white rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm shadow-sm">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-sky-400"></i>
+                <span class="font-medium">รวมทั้งเดือน <span id="monthNameDisplay" class="text-sky-300 font-bold"></span>:</span>
+            </div>
+            <div class="flex items-center gap-3 sm:gap-4">
+                <span>ทำงาน <strong id="totWorkDays" class="text-white">0</strong> วัน</span>
+                <span>ปกติ <strong id="totRegHrs" class="text-sky-300">0</strong> ชม.</span>
+                <span>OT <strong id="totOtHrs" class="text-orange-300">0</strong> ชม.</span>
+                <span>รวมเงิน <strong id="totIncome" class="text-emerald-300">฿0.00</strong></span>
+            </div>
+        </div>
 
-    function persistData() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-    }
+        <!-- Main Schedule Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden print-shadow-none">
+            <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-600">
+                    <i class="fa-regular fa-hand-pointer mr-1 text-sky-500"></i> แตะที่แถวใดก็ได้เพื่อแก้ไขเวลา / ตำแหน่ง / วันหยุด
+                </span>
+                <button onclick="loadDemoData()" class="text-xs text-sky-600 hover:underline font-medium no-print">
+                    <i class="fa-solid fa-rotate-right mr-1"></i>ใส่ตัวอย่างตาราง
+                </button>
+            </div>
 
-    function loadSampleData() {
-      const nowParts = getThaiNowParts();
-      const samples = [
-        { id: 's1', type: 'income', amount: 28000, category: 'salary', note: 'เงินเดือนเข้า', date: nowParts.dateStr, time: '09:00' },
-        { id: 's2', type: 'expense', amount: 65, category: 'food', note: 'ข้าวกะเพราไข่ดาว + น้ำ', date: nowParts.dateStr, time: '12:15' },
-        { id: 's3', type: 'expense', amount: 500, category: 'travel', note: 'เติมน้ำมันรถ', date: nowParts.dateStr, time: '17:40' },
-        { id: 's4', type: 'expense', amount: 399, category: 'bill', note: 'ค่าอินเทอร์เน็ตรายเดือน', date: nowParts.dateStr, time: '19:10' }
-      ];
-      transactions = [...samples, ...transactions];
-      persistData();
-      renderAll();
-      showToast('เพิ่มข้อมูลตัวอย่างแล้ว');
-    }
+            <div class="overflow-x-auto">
+                <table class="w-full text-center border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 text-xs border-b border-slate-200">
+                            <th class="py-2.5 px-2 font-semibold w-16">วันที่</th>
+                            <th class="py-2.5 px-2 font-semibold">เข้างาน</th>
+                            <th class="py-2.5 px-2 font-semibold">เลิกงาน</th>
+                            <th class="py-2.5 px-2 font-semibold w-20">ตำแหน่ง</th>
+                            <th class="py-2.5 px-2 font-semibold w-16">ชม.งาน</th>
+                            <th class="py-2.5 px-2 font-semibold w-20">OT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduleTableBody" class="divide-y divide-slate-100">
+                        <!-- Rows generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-    function clearAllData() {
-      if (transactions.length === 0) {
-        showToast('ไม่มีข้อมูลให้ล้าง');
-        return;
-      }
-      if (confirm('ต้องการลบประวัติรายรับรายจ่ายทั้งหมดใช่หรือไม่?')) {
-        transactions = [];
-        cancelEdit();
-        persistData();
-        renderAll();
-        showToast('ล้างข้อมูลทั้งหมดเรียบร้อย');
-      }
-    }
+    </main>
 
-    function exportCSV() {
-      if (transactions.length === 0) {
-        showToast('ยังไม่มีรายการสำหรับดาวน์โหลด');
-        return;
-      }
+    <!-- MODAL 1: Single Day Quick Edit Modal -->
+    <div id="dayModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-lg" id="modalDayTitle">วันที่ 1 พฤศจิกายน</h3>
+                    <p class="text-xs text-slate-500">เลือกกะเวลาสำเร็จรูป หรือตั้งค่าเอง</p>
+                </div>
+                <button onclick="closeModal('dayModal')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
 
-      const headers = ['วันที่', 'เวลา (ไทย)', 'ประเภท', 'หมวดหมู่', 'รายละเอียด', 'จำนวนเงิน (บาท)'];
-      const rows = getFilteredTransactions().map(t => {
-        const cat = CATEGORIES.find(c => c.id === t.category)?.name || 'อื่นๆ';
-        const typeLabel = t.type === 'income' ? 'รายรับ' : 'รายจ่าย';
-        return [
-          formatThaiDateLabel(t.date),
-          t.time + ' น.',
-          typeLabel,
-          cat,
-          `"${(t.note || '').replace(/"/g, '""')}"`,
-          t.amount
-        ].join(',');
-      });
+            <!-- Status Toggle -->
+            <div class="grid grid-cols-3 gap-2">
+                <button type="button" id="btnTypeWork" onclick="setDayType('work')" class="py-2 rounded-xl text-xs font-semibold border transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-briefcase"></i> ทำงาน
+                </button>
+                <button type="button" id="btnTypeOff" onclick="setDayType('off')" class="py-2 rounded-xl text-xs font-semibold border transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-mug-hot"></i> วันหยุด
+                </button>
+                <button type="button" id="btnTypeEmpty" onclick="setDayType('empty')" class="py-2 rounded-xl text-xs font-semibold border transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-eraser"></i> ล้างข้อมูล
+                </button>
+            </div>
 
-      const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `รายรับรายจ่าย_${getThaiNowParts().dateStr}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      showToast('ดาวน์โหลดไฟล์ Excel เรียบร้อย');
-    }
+            <!-- Work Fields -->
+            <div id="workFieldsContainer" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">จิ้มเลือกกะด่วน (Preset):</label>
+                    <div id="quickShiftButtons" class="flex flex-wrap gap-1.5"></div>
+                </div>
 
-    function renderAll() {
-      renderSummary();
-      renderList();
-    }
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">เวลาเข้างาน</label>
+                        <input type="time" id="editStart" onchange="autoCalcSingleOT()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">เวลาเลิกงาน</label>
+                        <input type="time" id="editEnd" onchange="autoCalcSingleOT()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:border-sky-500">
+                    </div>
+                </div>
 
-    // เริ่มต้นการทำงาน
-    (function init() {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) transactions = JSON.parse(saved);
-      } catch (e) {
-        transactions = [];
-      }
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">ตำแหน่งงาน</label>
+                        <div class="flex gap-1 mb-1.5 flex-wrap" id="quickPosButtons"></div>
+                        <input type="text" id="editPos" placeholder="เช่น SB, CFC, LOB" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 uppercase focus:outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">ชั่วโมง OT (ชม.)</label>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="adjustOT(-0.5)" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-700">-</button>
+                            <input type="number" step="0.5" min="0" id="editOT" class="w-full border border-slate-200 rounded-xl px-2 py-2 text-center text-sm font-bold text-orange-600 focus:outline-none focus:border-orange-500">
+                            <button type="button" onclick="adjustOT(0.5)" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-700">+</button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">*กะเกิน 9 ชม. คำนวณ OT ให้อัตโนมัติ</p>
+                    </div>
+                </div>
+            </div>
 
-      const savedHero = localStorage.getItem(HERO_KEY) || 'ironman';
-      setHero(savedHero);
+            <button onclick="saveSingleDay()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 rounded-xl shadow-sm transition">
+                บันทึกข้อมูลวันนี้
+            </button>
+        </div>
+    </div>
 
-      hideBalance = localStorage.getItem(HIDE_KEY) === '1';
-      document.getElementById('eye-icon').textContent = hideBalance ? '🙈' : '👁️';
-      document.getElementById('eye-text').textContent = hideBalance ? 'แสดงยอด' : 'ซ่อนยอด';
+    <!-- MODAL 2: Bulk Schedule Planner -->
+    <div id="bulkModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-lg">จัดกะล่วงหน้า (ทีละหลายวัน)</h3>
+                    <p class="text-xs text-slate-500">เลือกช่วงวันที่ฟิกไว้ แล้วลงตารางทีเดียว</p>
+                </div>
+                <button onclick="closeModal('bulkModal')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
 
-      updateThaiClock();
-      setInterval(updateThaiClock, 1000);
+            <div class="grid grid-cols-2 gap-3 bg-sky-50/70 p-3 rounded-xl border border-sky-100">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">ตั้งแต่วันที่</label>
+                    <select id="bulkStartDay" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">ถึงวันที่</label>
+                    <select id="bulkEndDay" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800"></select>
+                </div>
+            </div>
 
-      setTxType('expense');
-      setFilter('month');
-      renderAll();
-    })();
-  </script>
+            <div class="flex gap-1.5 flex-wrap">
+                <button type="button" onclick="setBulkRange(1, 7)" class="text-xs bg-slate-100 hover:bg-sky-100 text-slate-700 px-2.5 py-1 rounded-lg">วันที่ 1–7</button>
+                <button type="button" onclick="setBulkRange(8, 15)" class="text-xs bg-slate-100 hover:bg-sky-100 text-slate-700 px-2.5 py-1 rounded-lg">วันที่ 8–15</button>
+                <button type="button" onclick="setBulkRange(16, 23)" class="text-xs bg-slate-100 hover:bg-sky-100 text-slate-700 px-2.5 py-1 rounded-lg">วันที่ 16–23</button>
+                <button type="button" onclick="setBulkRange(24, 31)" class="text-xs bg-slate-100 hover:bg-sky-100 text-slate-700 px-2.5 py-1 rounded-lg">วันที่ 24–สิ้นเดือน</button>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1.5">เลือกช่วงเวลาเข้า-ออกงาน:</label>
+                <div id="bulkShiftPresets" class="flex flex-wrap gap-1.5 mb-2"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] text-slate-500">เข้างาน</label>
+                        <input type="time" id="bulkStart" value="07:00" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-500">เลิกงาน</label>
+                        <input type="time" id="bulkEnd" value="16:00" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">ตำแหน่งงาน</label>
+                <div id="bulkPosPresets" class="flex flex-wrap gap-1.5 mb-1.5"></div>
+                <input type="text" id="bulkPos" value="SB" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold uppercase">
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">ตรงกับวันไหนให้เป็น "วันหยุด" (ถ้ามี):</label>
+                <div class="flex gap-1.5 flex-wrap" id="bulkDayOffCheckboxes">
+                    <label class="cursor-pointer"><input type="checkbox" value="0" class="peer sr-only"><span class="px-2.5 py-1 rounded-lg text-xs border border-slate-200 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 inline-block">อา.</span></label>
+                    <label class="cursor-pointer"><input type="checkbox" value="1" class="peer sr-only"><span class="px-2.5 py-1 rounded-lg text-xs border border-slate-200 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 inline-block">จ.</span></label>
+                    <label class="cursor-pointer"><input type="checkbox" value="2" class="peer sr-only"><span class="px-2.5 py-1 rounded-lg text-xs border border-slate-200 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 inline-block">อ.</span></label>
+                    <label class="cursor-pointer"><input type="checkbox" value="3" class="peer sr-only"><span class="px-2.5 py-1 rounded-lg text-xs border border-slate-200 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 inline-block">พ.</span></label>
+                    <label class="cursor-pointer"><input type="checkbox" value="4" class="peer sr-only"><span class="px-2.5 py-1 rounded-lg text-xs border border-slate-200 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 inline-block">พฤ.</span></label>
+                    <label class="cursor-pointer"><input type="checkbox" value="5" class="peer sr-only"><span class="px-2.5 py-1 rounded-lg text-xs border border-slate-200 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 inline-block">ศ.</span></label>
+                    <label class="cursor-pointer"><input type="checkbox" value="6" class="peer sr-only"><span class="px-2.5 py-1 rounded-lg text-xs border border-slate-200 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 inline-block">ส.</span></label>
+                </div>
+            </div>
+
+            <button onclick="applyBulkSchedule()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 rounded-xl shadow-sm transition">
+                วางลงตารางทันที
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Settings (Presets & Wage Rate) -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-lg">ตั้งค่ากะงาน & เรทค่าแรง</h3>
+                <button onclick="closeModal('settingsModal')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">ค่าแรงต่อชั่วโมงปกติ (บาท)</label>
+                        <input type="number" step="0.01" id="setHourlyRate" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">ค่า OT ต่อชั่วโมง (บาท)</label>
+                        <input type="number" step="0.01" id="setOtRate" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">ตำแหน่งงานที่ใช้บ่อย (คั่นด้วยลูกน้ำ)</label>
+                    <input type="text" id="setPositions" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold uppercase" placeholder="SB, CFC, LOB">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">กะเวลาที่ใช้บ่อย (รูปแบบ เริ่ม-เลิก คั่นด้วยลูกน้ำ)</label>
+                    <textarea id="setShifts" rows="2" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold" placeholder="07:00-16:00, 14:00-23:00, 12:00-22:00, 11:00-20:00"></textarea>
+                </div>
+            </div>
+
+            <button onclick="saveSettings()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl shadow-sm transition">
+                บันทึกการตั้งค่า
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const THAI_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+        const THAI_DAYS_SHORT = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
+
+        const FIXED_HOLIDAYS = [
+            "01-01", "04-06", "04-13", "04-14", "04-15",
+            "05-01", "05-04", "06-03", "07-28", "08-12",
+            "10-13", "10-23", "12-05", "12-10", "12-31"
+        ];
+
+        let currentYearMonth = "";
+        let scheduleData = {};
+        let settings = {
+            hourlyRate: 52,
+            otRate: 79.50,
+            positions: ["SB", "CFC", "LOB"],
+            shifts: ["07:00-16:00", "14:00-23:00", "12:00-22:00", "11:00-20:00", "10:00-21:00", "07:00-17:00"]
+        };
+        let activeEditDay = null;
+        let activeDayType = 'work';
+
+        function formatMoney(num) {
+            return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        window.onload = () => {
+            const savedSettings = localStorage.getItem('shiftApp_settings_v2');
+            if (savedSettings) settings = JSON.parse(savedSettings);
+
+            const savedData = localStorage.getItem('shiftApp_data');
+            if (savedData) scheduleData = JSON.parse(savedData);
+
+            const now = new Date();
+            const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            document.getElementById('monthPicker').value = ym;
+
+            if (!savedData) {
+                loadDemoData(false);
+            } else {
+                loadMonthData();
+            }
+        };
+
+        function changeMonth(delta) {
+            const picker = document.getElementById('monthPicker');
+            const [y, m] = picker.value.split('-').map(Number);
+            const d = new Date(y, m - 1 + delta, 1);
+            picker.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            loadMonthData();
+        }
+
+        function getDaysInMonth(year, month) {
+            return new Date(year, month, 0).getDate();
+        }
+
+        function calculateSmartPayday(year, month, targetDay) {
+            let d = new Date(year, month - 1, targetDay);
+            let shifted = false;
+            let originalDayStr = `${targetDay} ${THAI_MONTHS[month - 1].slice(0, 3)}`;
+
+            while (true) {
+                const dow = d.getDay();
+                const mmdd = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const isWeekend = (dow === 0 || dow === 6);
+                const isHoliday = FIXED_HOLIDAYS.includes(mmdd);
+
+                if (!isWeekend && !isHoliday) break;
+                shifted = true;
+                d.setDate(d.getDate() - 1);
+            }
+
+            return {
+                dateObj: d,
+                dayNum: d.getDate(),
+                monthShort: THAI_MONTHS[d.getMonth()].slice(0, 3),
+                dayName: THAI_DAYS_SHORT[d.getDay()],
+                shifted: shifted,
+                originalStr: originalDayStr
+            };
+        }
+
+        function computeHours(startStr, endStr) {
+            if (!startStr || !endStr) return { reg: 0, autoOt: 0, totalSpan: 0 };
+            const [sh, sm] = startStr.split(':').map(Number);
+            const [eh, em] = endStr.split(':').map(Number);
+            let startMins = sh * 60 + sm;
+            let endMins = eh * 60 + em;
+            if (endMins <= startMins) endMins += 24 * 60;
+
+            const totalSpan = (endMins - startMins) / 60;
+            if (totalSpan >= 9) {
+                const autoOt = Math.round((totalSpan - 9) * 2) / 2;
+                return { reg: 8, autoOt: autoOt, totalSpan };
+            } else if (totalSpan > 5) {
+                return { reg: Math.round((totalSpan - 1) * 2) / 2, autoOt: 0, totalSpan };
+            } else {
+                return { reg: Math.round(totalSpan * 2) / 2, autoOt: 0, totalSpan };
+            }
+        }
+
+        function loadMonthData() {
+            currentYearMonth = document.getElementById('monthPicker').value;
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const daysInMonth = getDaysInMonth(year, month);
+
+            document.getElementById('headerHourlyRate').textContent = settings.hourlyRate;
+            document.getElementById('headerOtRate').textContent = settings.otRate.toFixed(2);
+            document.getElementById('monthNameDisplay').textContent = `${THAI_MONTHS[month - 1]} ${year + 543}`;
+            document.getElementById('c2Title').textContent = `วีค 2 • วันที่ 16 – ${daysInMonth}`;
+
+            const p1 = calculateSmartPayday(year, month, 15);
+            const p2 = calculateSmartPayday(year, month, 25);
+
+            document.getElementById('payday1Badge').innerHTML = renderPaydayBadge(p1, 15);
+            document.getElementById('payday2Badge').innerHTML = renderPaydayBadge(p2, 25);
+
+            if (!scheduleData[currentYearMonth]) {
+                scheduleData[currentYearMonth] = {};
+            }
+
+            renderTableAndStats(year, month, daysInMonth);
+        }
+
+        function renderPaydayBadge(p, origDay) {
+            if (p.shifted) {
+                return `
+                    <div class="inline-flex flex-col items-end">
+                        <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                            <i class="fa-solid fa-sack-dollar mr-1"></i>ออก ${p.dayName} ${p.dayNum} ${p.monthShort}
+                        </span>
+                        <span class="text-[10px] text-orange-600 font-medium mt-0.5">เลื่อนเร็วขึ้น (ปกติวันที่ ${origDay})</span>
+                    </div>
+                `;
+            }
+            return `
+                <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-md inline-block">
+                    <i class="fa-solid fa-sack-dollar mr-1"></i>เงินออก ${p.dayName} ${p.dayNum} ${p.monthShort}
+                </span>
+            `;
+        }
+
+        function renderTableAndStats(year, month, daysInMonth) {
+            const tbody = document.getElementById('scheduleTableBody');
+            tbody.innerHTML = '';
+
+            const monthRecords = scheduleData[currentYearMonth] || {};
+
+            let c1 = { workDays: 0, offDays: 0, regHrs: 0, otHrs: 0 };
+            let c2 = { workDays: 0, offDays: 0, regHrs: 0, otHrs: 0 };
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateObj = new Date(year, month - 1, day);
+                const dow = dateObj.getDay();
+                const isWeekend = (dow === 0 || dow === 6);
+                const rec = monthRecords[day];
+
+                let rowClass = "hover:bg-sky-50/60 cursor-pointer transition select-none";
+                if (day === 15) rowClass += " border-b-2 border-slate-400";
+
+                let timeCellsHtml = '';
+                let posHtml = '<span class="text-slate-300">-</span>';
+                let hrsHtml = '<span class="text-slate-300">-</span>';
+                let otHtml = '<span class="text-slate-300">-</span>';
+
+                if (rec && rec.type === 'off') {
+                    rowClass += " bg-slate-100/80";
+                    timeCellsHtml = `<td colspan="2" class="py-2.5 px-2 font-bold text-rose-500 tracking-wide">หยุด</td>`;
+                    if (day <= 15) c1.offDays++; else c2.offDays++;
+                } else if (rec && rec.type === 'work') {
+                    const { reg } = computeHours(rec.start, rec.end);
+                    const otVal = Number(rec.ot || 0);
+
+                    if (day <= 15) {
+                        c1.workDays++;
+                        c1.regHrs += reg;
+                        c1.otHrs += otVal;
+                    } else {
+                        c2.workDays++;
+                        c2.regHrs += reg;
+                        c2.otHrs += otVal;
+                    }
+
+                    const isAfternoon = rec.start >= "12:00";
+                    const timeColor = isAfternoon ? "text-indigo-600" : "text-sky-700";
+
+                    timeCellsHtml = `
+                        <td class="py-2.5 px-2 font-semibold ${timeColor}">${rec.start}</td>
+                        <td class="py-2.5 px-2 font-semibold ${timeColor}">${rec.end}</td>
+                    `;
+                    posHtml = rec.pos ? `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-xs">${rec.pos}</span>` : '-';
+                    hrsHtml = `<span class="font-medium text-slate-700">${reg}</span>`;
+                    if (otVal > 0) {
+                        otHtml = `<span class="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-bold text-xs">OT ${otVal} ชม.</span>`;
+                    }
+                } else {
+                    timeCellsHtml = `
+                        <td class="py-2.5 px-2 text-slate-300 text-xs">--:--</td>
+                        <td class="py-2.5 px-2 text-slate-300 text-xs">--:--</td>
+                    `;
+                }
+
+                const dayBadgeColor = isWeekend ? "text-rose-500 font-bold" : "text-slate-700 font-bold";
+
+                const tr = document.createElement('tr');
+                tr.className = rowClass;
+                tr.onclick = () => openDayModal(day);
+                tr.innerHTML = `
+                    <td class="py-2.5 px-2 bg-slate-50/70 border-r border-slate-100 ${dayBadgeColor}">
+                        <span>${day}</span>
+                        <span class="text-[10px] font-normal text-slate-400 ml-0.5">${THAI_DAYS_SHORT[dow]}</span>
+                    </td>
+                    ${timeCellsHtml}
+                    <td class="py-2.5 px-2">${posHtml}</td>
+                    <td class="py-2.5 px-2">${hrsHtml}</td>
+                    <td class="py-2.5 px-2">${otHtml}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            // Calculate Income by Hourly Rate (52/hr) + OT Rate (79.50/hr)
+            const c1Income = (c1.regHrs * settings.hourlyRate) + (c1.otHrs * settings.otRate);
+            const c2Income = (c2.regHrs * settings.hourlyRate) + (c2.otHrs * settings.otRate);
+
+            document.getElementById('c1WorkDays').textContent = c1.workDays;
+            document.getElementById('c1OffDays').textContent = c1.offDays;
+            document.getElementById('c1RegHrs').textContent = c1.regHrs;
+            document.getElementById('c1OtHrs').textContent = c1.otHrs;
+            document.getElementById('c1Income').textContent = `฿${formatMoney(c1Income)}`;
+
+            document.getElementById('c2WorkDays').textContent = c2.workDays;
+            document.getElementById('c2OffDays').textContent = c2.offDays;
+            document.getElementById('c2RegHrs').textContent = c2.regHrs;
+            document.getElementById('c2OtHrs').textContent = c2.otHrs;
+            document.getElementById('c2Income').textContent = `฿${formatMoney(c2Income)}`;
+
+            document.getElementById('totWorkDays').textContent = c1.workDays + c2.workDays;
+            document.getElementById('totRegHrs').textContent = c1.regHrs + c2.regHrs;
+            document.getElementById('totOtHrs').textContent = c1.otHrs + c2.otHrs;
+            document.getElementById('totIncome').textContent = `฿${formatMoney(c1Income + c2Income)}`;
+        }
+
+        // --- Single Day Modal Logic ---
+        function openDayModal(day) {
+            activeEditDay = day;
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const dow = new Date(year, month - 1, day).getDay();
+            document.getElementById('modalDayTitle').textContent = `วันที่ ${day} ${THAI_MONTHS[month - 1]} (${THAI_DAYS_SHORT[dow]})`;
+
+            const shiftContainer = document.getElementById('quickShiftButtons');
+            shiftContainer.innerHTML = settings.shifts.map(s => `
+                <button type="button" onclick="applyQuickShift('${s}')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-semibold transition">
+                    ${s}
+                </button>
+            `).join('');
+
+            const posContainer = document.getElementById('quickPosButtons');
+            posContainer.innerHTML = settings.positions.map(p => `
+                <button type="button" onclick="document.getElementById('editPos').value='${p}'" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
+                    ${p}
+                </button>
+            `).join('');
+
+            const rec = scheduleData[currentYearMonth]?.[day];
+            if (rec && rec.type === 'off') {
+                setDayType('off');
+            } else if (rec && rec.type === 'work') {
+                setDayType('work');
+                document.getElementById('editStart').value = rec.start || '07:00';
+                document.getElementById('editEnd').value = rec.end || '16:00';
+                document.getElementById('editPos').value = rec.pos || settings.positions[0] || '';
+                document.getElementById('editOT').value = rec.ot || 0;
+            } else {
+                setDayType('work');
+                document.getElementById('editStart').value = '07:00';
+                document.getElementById('editEnd').value = '16:00';
+                document.getElementById('editPos').value = settings.positions[0] || 'SB';
+                document.getElementById('editOT').value = 0;
+            }
+
+            document.getElementById('dayModal').classList.remove('hidden');
+        }
+
+        function setDayType(type) {
+            activeDayType = type;
+            const btnWork = document.getElementById('btnTypeWork');
+            const btnOff = document.getElementById('btnTypeOff');
+            const btnEmpty = document.getElementById('btnTypeEmpty');
+            const workFields = document.getElementById('workFieldsContainer');
+
+            [btnWork, btnOff, btnEmpty].forEach(b => {
+                b.className = "py-2 rounded-xl text-xs font-semibold border border-slate-200 text-slate-600 bg-white transition flex items-center justify-center gap-1.5";
+            });
+
+            if (type === 'work') {
+                btnWork.className = "py-2 rounded-xl text-xs font-semibold border border-sky-500 text-white bg-sky-500 transition flex items-center justify-center gap-1.5 shadow-xs";
+                workFields.classList.remove('opacity-40', 'pointer-events-none');
+            } else if (type === 'off') {
+                btnOff.className = "py-2 rounded-xl text-xs font-semibold border border-rose-500 text-white bg-rose-500 transition flex items-center justify-center gap-1.5 shadow-xs";
+                workFields.classList.add('opacity-40', 'pointer-events-none');
+            } else {
+                btnEmpty.className = "py-2 rounded-xl text-xs font-semibold border border-slate-700 text-white bg-slate-700 transition flex items-center justify-center gap-1.5 shadow-xs";
+                workFields.classList.add('opacity-40', 'pointer-events-none');
+            }
+        }
+
+        function applyQuickShift(shiftStr) {
+            const [s, e] = shiftStr.split('-');
+            document.getElementById('editStart').value = s;
+            document.getElementById('editEnd').value = e;
+            autoCalcSingleOT();
+        }
+
+        function autoCalcSingleOT() {
+            const s = document.getElementById('editStart').value;
+            const e = document.getElementById('editEnd').value;
+            const { autoOt } = computeHours(s, e);
+            document.getElementById('editOT').value = autoOt;
+        }
+
+        function adjustOT(delta) {
+            const input = document.getElementById('editOT');
+            const val = Math.max(0, (parseFloat(input.value) || 0) + delta);
+            input.value = val;
+        }
+
+        function saveSingleDay() {
+            if (!scheduleData[currentYearMonth]) scheduleData[currentYearMonth] = {};
+
+            if (activeDayType === 'empty') {
+                delete scheduleData[currentYearMonth][activeEditDay];
+            } else if (activeDayType === 'off') {
+                scheduleData[currentYearMonth][activeEditDay] = { type: 'off' };
+            } else {
+                scheduleData[currentYearMonth][activeEditDay] = {
+                    type: 'work',
+                    start: document.getElementById('editStart').value,
+                    end: document.getElementById('editEnd').value,
+                    pos: document.getElementById('editPos').value.trim().toUpperCase(),
+                    ot: parseFloat(document.getElementById('editOT').value) || 0
+                };
+            }
+
+            persistData();
+            closeModal('dayModal');
+            loadMonthData();
+        }
+
+        // --- Bulk Planner Modal Logic ---
+        function openBulkModal() {
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const daysInMonth = getDaysInMonth(year, month);
+
+            const startSel = document.getElementById('bulkStartDay');
+            const endSel = document.getElementById('bulkEndDay');
+            startSel.innerHTML = '';
+            endSel.innerHTML = '';
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dow = THAI_DAYS_SHORT[new Date(year, month - 1, d).getDay()];
+                startSel.innerHTML += `<option value="${d}">วันที่ ${d} (${dow})</option>`;
+                endSel.innerHTML += `<option value="${d}">วันที่ ${d} (${dow})</option>`;
+            }
+            endSel.value = Math.min(7, daysInMonth);
+
+            document.getElementById('bulkShiftPresets').innerHTML = settings.shifts.map(s => `
+                <button type="button" onclick="const [a,b]='${s}'.split('-'); document.getElementById('bulkStart').value=a; document.getElementById('bulkEnd').value=b;" class="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-semibold">
+                    ${s}
+                </button>
+            `).join('');
+
+            document.getElementById('bulkPosPresets').innerHTML = settings.positions.map(p => `
+                <button type="button" onclick="document.getElementById('bulkPos').value='${p}'" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
+                    ${p}
+                </button>
+            `).join('');
+
+            document.getElementById('bulkModal').classList.remove('hidden');
+        }
+
+        function setBulkRange(s, e) {
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const maxD = getDaysInMonth(year, month);
+            document.getElementById('bulkStartDay').value = Math.min(s, maxD);
+            document.getElementById('bulkEndDay').value = Math.min(e, maxD);
+        }
+
+        function applyBulkSchedule() {
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const sDay = parseInt(document.getElementById('bulkStartDay').value);
+            const eDay = parseInt(document.getElementById('bulkEndDay').value);
+            const start = document.getElementById('bulkStart').value;
+            const end = document.getElementById('bulkEnd').value;
+            const pos = document.getElementById('bulkPos').value.trim().toUpperCase();
+            const { autoOt } = computeHours(start, end);
+
+            const offDaysOfWeek = Array.from(document.querySelectorAll('#bulkDayOffCheckboxes input:checked')).map(cb => parseInt(cb.value));
+
+            if (!scheduleData[currentYearMonth]) scheduleData[currentYearMonth] = {};
+
+            const from = Math.min(sDay, eDay);
+            const to = Math.max(sDay, eDay);
+
+            for (let d = from; d <= to; d++) {
+                const dow = new Date(year, month - 1, d).getDay();
+                if (offDaysOfWeek.includes(dow)) {
+                    scheduleData[currentYearMonth][d] = { type: 'off' };
+                } else {
+                    scheduleData[currentYearMonth][d] = {
+                        type: 'work',
+                        start,
+                        end,
+                        pos,
+                        ot: autoOt
+                    };
+                }
+            }
+
+            persistData();
+            closeModal('bulkModal');
+            loadMonthData();
+        }
+
+        // --- Settings Modal Logic ---
+        function openSettingsModal() {
+            document.getElementById('setHourlyRate').value = settings.hourlyRate;
+            document.getElementById('setOtRate').value = settings.otRate;
+            document.getElementById('setPositions').value = settings.positions.join(', ');
+            document.getElementById('setShifts').value = settings.shifts.join(', ');
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function saveSettings() {
+            settings.hourlyRate = parseFloat(document.getElementById('setHourlyRate').value) || 0;
+            settings.otRate = parseFloat(document.getElementById('setOtRate').value) || 0;
+            settings.positions = document.getElementById('setPositions').value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+            settings.shifts = document.getElementById('setShifts').value.split(',').map(s => s.trim()).filter(s => s.includes('-'));
+
+            localStorage.setItem('shiftApp_settings_v2', JSON.stringify(settings));
+            closeModal('settingsModal');
+            loadMonthData();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function persistData() {
+            localStorage.setItem('shiftApp_data', JSON.stringify(scheduleData));
+        }
+
+        // --- Demo Data matching the user's spreadsheet ---
+        function loadDemoData(confirmOverwrite = true) {
+            if (confirmOverwrite && !confirm("ต้องการใส่ข้อมูลตัวอย่างลงในเดือนนี้ใช่หรือไม่?")) return;
+
+            const ym = document.getElementById('monthPicker').value;
+            const [year, month] = ym.split('-').map(Number);
+            const daysInMonth = getDaysInMonth(year, month);
+
+            const samplePattern = {
+                1:  { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
+                2:  { type: 'work', start: '14:00', end: '23:00', pos: 'SB', ot: 0 },
+                3:  { type: 'off' },
+                4:  { type: 'work', start: '12:00', end: '22:00', pos: 'CFC', ot: 1 },
+                5:  { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
+                6:  { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
+                7:  { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
+                8:  { type: 'work', start: '12:00', end: '22:00', pos: 'CFC', ot: 1 },
+                9:  { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
+                10: { type: 'off' },
+                11: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
+                12: { type: 'work', start: '14:00', end: '23:00', pos: 'SB', ot: 0 },
+                13: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
+                14: { type: 'work', start: '14:00', end: '23:00', pos: 'SB', ot: 0 },
+                15: { type: 'work', start: '14:00', end: '23:00', pos: 'SB', ot: 0 },
+                16: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
+                17: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 1 },
+                18: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
+                19: { type: 'off' },
+                20: { type: 'work', start: '11:00', end: '20:00', pos: 'LOB', ot: 1 },
+                21: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
+                22: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 1 },
+                23: { type: 'off' },
+                24: { type: 'work', start: '07:00', end: '17:00', pos: 'SB', ot: 1 },
+                25: { type: 'work', start: '07:00', end: '17:00', pos: 'CFC', ot: 1 },
+                26: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 1 },
+                27: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
+                28: { type: 'work', start: '14:00', end: '23:00', pos: 'SB', ot: 0 },
+                29: { type: 'work', start: '14:00', end: '23:00', pos: 'SB', ot: 0 }
+            };
+
+            scheduleData[ym] = {};
+            for (let d = 1; d <= daysInMonth; d++) {
+                if (samplePattern[d]) scheduleData[ym][d] = samplePattern[d];
+            }
+
+            persistData();
+            loadMonthData();
+        }
+
+        // --- Export CSV ---
+        function exportCSV() {
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const daysInMonth = getDaysInMonth(year, month);
+            const records = scheduleData[currentYearMonth] || {};
+
+            let csv = "\uFEFFวันที่,วัน,เข้างาน,เลิกงาน,ตำแหน่ง,ชั่วโมงปกติ,OT (ชม.),ค่าแรงปกติ (บาท),ค่า OT (บาท),รวมรับ (บาท)\n";
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dow = THAI_DAYS_SHORT[new Date(year, month - 1, d).getDay()];
+                const rec = records[d];
+                if (!rec) {
+                    csv += `${d},${dow},-,-,-,-,-,-,-,-\n`;
+                } else if (rec.type === 'off') {
+                    csv += `${d},${dow},หยุด,หยุด,-,-,-,0,0,0\n`;
+                } else {
+                    const { reg } = computeHours(rec.start, rec.end);
+                    const ot = rec.ot || 0;
+                    const regPay = reg * settings.hourlyRate;
+                    const otPay = ot * settings.otRate;
+                    csv += `${d},${dow},${rec.start},${rec.end},${rec.pos || '-'},${reg},${ot},${regPay.toFixed(2)},${otPay.toFixed(2)},${(regPay + otPay).toFixed(2)}\n`;
+                }
+            }
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `ตารางกะงาน_${THAI_MONTHS[month - 1]}_${year + 543}.csv`;
+            link.click();
+        }
+    </script>
 </body>
 </html>
