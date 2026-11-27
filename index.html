@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ตารางกะงาน & คำนวณวันเงินออก</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS for reading real Excel (.xlsx, .xls, .csv) files -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -37,7 +36,7 @@
                 </div>
                 <div>
                     <h1 class="font-bold text-slate-800 text-base sm:text-lg leading-tight">ตารางกะงาน & เงินออก</h1>
-                    <p class="text-[11px] text-slate-500">ปกติ <span id="headerHourlyRate" class="font-semibold text-sky-600">52</span> บ./ชม. • OT <span id="headerOtRate" class="font-semibold text-orange-500">79.50</span> บ./ชม.</p>
+                    <p class="text-[11px] text-slate-500">ปกติ <span id="headerHourlyRate" class="font-semibold text-sky-600">50</span> บ./ชม. • OT <span id="headerOtRate" class="font-semibold text-orange-500">75.00</span> บ./ชม.</p>
                 </div>
             </div>
 
@@ -157,11 +156,8 @@
                     <i class="fa-regular fa-hand-pointer mr-1 text-sky-500"></i> แตะที่แถวใดก็ได้เพื่อแก้ไขเวลา / ตำแหน่ง / วันหยุด
                 </span>
                 <div class="flex items-center gap-3 no-print">
-                    <button onclick="clearCurrentMonth()" class="text-xs text-rose-500 hover:underline font-medium">
-                        ล้างเดือนนี้
-                    </button>
-                    <button onclick="loadDemoData()" class="text-xs text-sky-600 hover:underline font-medium">
-                        <i class="fa-solid fa-rotate-right mr-1"></i>ตัวอย่าง
+                    <button onclick="resetToExcelData()" class="text-xs text-sky-600 hover:underline font-medium">
+                        <i class="fa-solid fa-rotate-right mr-1"></i>รีเซ็ตตาม FARAAA.xlsx
                     </button>
                 </div>
             </div>
@@ -192,7 +188,7 @@
         <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-xl space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
-                    <h3 class="font-bold text-slate-800 text-lg" id="modalDayTitle">วันที่ 1 พฤศจิกายน</h3>
+                    <h3 class="font-bold text-slate-800 text-lg" id="modalDayTitle">วันที่ 1 มกราคม</h3>
                     <p class="text-xs text-slate-500">เลือกกะเวลาสำเร็จรูป หรือตั้งค่าเอง</p>
                 </div>
                 <button onclick="closeModal('dayModal')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center">
@@ -337,7 +333,6 @@
                 </button>
             </div>
 
-            <!-- Method 1: Upload Excel File -->
             <div class="bg-emerald-50/70 border-2 border-dashed border-emerald-300 rounded-2xl p-4 text-center space-y-2">
                 <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
                     <i class="fa-solid fa-file-excel text-lg"></i>
@@ -351,7 +346,6 @@
                         <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" onchange="handleExcelUpload(event)" class="hidden">
                     </label>
                 </div>
-                <!-- Sheet selector if workbook has multiple sheets -->
                 <div id="sheetSelectorBox" class="hidden pt-2 text-left bg-white p-3 rounded-xl border border-emerald-200 space-y-2">
                     <label class="block text-xs font-semibold text-slate-700">เลือกชีต (Sheet) ที่ต้องการนำเข้า:</label>
                     <div class="flex gap-2">
@@ -367,12 +361,10 @@
                 <div class="flex-grow border-t border-slate-200"></div>
             </div>
 
-            <!-- Method 2: Copy & Paste from Google Sheets -->
             <div class="space-y-2">
                 <label class="block text-sm font-semibold text-slate-800">
                     วิธีที่ 2: ก๊อปปี้จาก Google Sheets / Excel มาวางตรงนี้
                 </label>
-                <p class="text-xs text-slate-500">คลุมดำแถววันที่ 1–30 จากในแอป Sheets กดคัดลอก แล้วกดวางด้านล่าง:</p>
                 <textarea id="pasteDataArea" rows="5" class="w-full border border-slate-200 rounded-xl p-3 text-xs font-mono bg-slate-50 focus:bg-white focus:outline-none focus:border-sky-500" placeholder="ตัวอย่างที่วางได้ทันที:&#10;1	7:00	16:00	SB&#10;2	14:00	23:00	SB&#10;3	หยุด&#10;4	12:00	22:00	CFC	OT 1 ชม."></textarea>
                 <button type="button" onclick="handlePastedData()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2.5 rounded-xl text-sm shadow-sm transition">
                     แปลงข้อมูลที่วางลงตาราง
@@ -394,11 +386,11 @@
             <div class="space-y-3">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">ค่าแรงต่อชั่วโมงปกติ (บาท)</label>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">ค่าแรงปกติ (บาท/ชม.)</label>
                         <input type="number" step="0.01" id="setHourlyRate" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">ค่า OT ต่อชั่วโมง (บาท)</label>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">ค่า OT (บาท/ชม.)</label>
                         <input type="number" step="0.01" id="setOtRate" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold">
                     </div>
                 </div>
@@ -415,7 +407,7 @@
             </div>
 
             <button onclick="saveSettings()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl shadow-sm transition">
-                บันทึกการตั้งค่า
+                บันทึกการตั้งค่า (เฉพาะเดือนที่เลือก)
             </button>
         </div>
     </div>
@@ -430,691 +422,398 @@
             "10-13", "10-23", "12-05", "12-10", "12-31"
         ];
 
+        // Pre-loaded data from FARAAA.xlsx ("ตารางหมาน้อย")
+        const EXCEL_IMPORTED_DATA = {
+            "2025-01": {
+                "12": {"type": "work", "start": "11:00", "end": "20:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "13": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "14": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "15": {"type": "off"},
+                "16": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "17": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "18": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "19": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "20": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "21": {"type": "off"},
+                "22": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "23": {"type": "off"},
+                "24": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "25": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "26": {"type": "work", "start": "14:10", "end": "22:30", "pos": "", "reg": 7.5, "ot": 0.0},
+                "27": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "28": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "29": {"type": "off"},
+                "30": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "31": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0}
+            },
+            "2025-02": {
+                "1": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "2": {"type": "work", "start": "12:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 1.0},
+                "3": {"type": "work", "start": "11:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 2.0},
+                "4": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "5": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "6": {"type": "work", "start": "12:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 1.0},
+                "7": {"type": "off"},
+                "8": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "9": {"type": "work", "start": "10:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 3.0},
+                "10": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "11": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "12": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "13": {"type": "work", "start": "11:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 2.0},
+                "14": {"type": "off"},
+                "15": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 9.0},
+                "16": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "17": {"type": "work", "start": "11:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 2.0},
+                "18": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "19": {"type": "work", "start": "11:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 2.0},
+                "20": {"type": "work", "start": "11:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 2.0},
+                "21": {"type": "off"},
+                "22": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "23": {"type": "work", "start": "10:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 3.0},
+                "24": {"type": "work", "start": "11:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 2.0},
+                "25": {"type": "off"},
+                "26": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "27": {"type": "work", "start": "11:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 2.0},
+                "28": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0}
+            },
+            "2025-03": {
+                "1": {"type": "work", "start": "09:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "2": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "3": {"type": "work", "start": "08:00", "end": "16:00", "pos": "", "reg": 7.0, "ot": 0.0},
+                "4": {"type": "work", "start": "14:00", "end": "22:30", "pos": "", "reg": 7.5, "ot": 0.0},
+                "5": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "9": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "10": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "11": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "12": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "13": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "14": {"type": "off"},
+                "15": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "16": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "17": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "18": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "19": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "20": {"type": "off"},
+                "21": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "22": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "23": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "24": {"type": "off"},
+                "25": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "26": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "27": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 2.0},
+                "28": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "29": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "30": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "31": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5}
+            },
+            "2025-04": {
+                "1": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "2": {"type": "off"},
+                "3": {"type": "work", "start": "08:00", "end": "17:30", "pos": "", "reg": 8.0, "ot": 0.5},
+                "4": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "5": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "6": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "7": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "8": {"type": "off"},
+                "9": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "10": {"type": "work", "start": "10:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 3.0},
+                "11": {"type": "work", "start": "11:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 2.0},
+                "12": {"type": "work", "start": "11:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 2.5},
+                "13": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5},
+                "14": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "15": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "16": {"type": "work", "start": "08:00", "end": "17:30", "pos": "", "reg": 8.0, "ot": 0.5},
+                "17": {"type": "off"},
+                "18": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "19": {"type": "work", "start": "09:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "20": {"type": "off"},
+                "21": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "22": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "23": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "24": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "25": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "26": {"type": "work", "start": "08:00", "end": "17:30", "pos": "", "reg": 8.0, "ot": 0.5},
+                "27": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5},
+                "28": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5},
+                "29": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "30": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0}
+            },
+            "2025-05": {
+                "1": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "2": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "3": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "4": {"type": "off"},
+                "5": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "6": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "7": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "8": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5},
+                "9": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5},
+                "10": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5},
+                "11": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "12": {"type": "off"},
+                "13": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "14": {"type": "work", "start": "08:00", "end": "21:00", "pos": "", "reg": 8.0, "ot": 4.0},
+                "15": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 30.0},
+                "16": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "17": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "18": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "19": {"type": "off"},
+                "20": {"type": "off"},
+                "21": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "22": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "23": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "24": {"type": "work", "start": "08:00", "end": "15:00", "pos": "", "reg": 6.0, "ot": 0.0},
+                "25": {"type": "off"},
+                "26": {"type": "off"},
+                "27": {"type": "off"},
+                "28": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "29": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "30": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "31": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0}
+            },
+            "2025-06": {
+                "1": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "2": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "3": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "4": {"type": "work", "start": "08:00", "end": "14:00", "pos": "", "reg": 5.0, "ot": 0.0},
+                "5": {"type": "off"},
+                "6": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "7": {"type": "work", "start": "07:30", "end": "16:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "8": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "9": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "10": {"type": "off"},
+                "11": {"type": "work", "start": "08:00", "end": "19:00", "pos": "", "reg": 8.0, "ot": 2.0},
+                "12": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "13": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "14": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "15": {"type": "off"},
+                "16": {"type": "work", "start": "12:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 1.5},
+                "17": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "18": {"type": "work", "start": "08:00", "end": "18:00", "pos": "", "reg": 8.0, "ot": 1.0},
+                "19": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "20": {"type": "work", "start": "13:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.5},
+                "21": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "22": {"type": "off"},
+                "23": {"type": "work", "start": "06:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 2.0},
+                "24": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "25": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "26": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "27": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "28": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "29": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "30": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0}
+            },
+            "2025-07": {
+                "1": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "2": {"type": "off"},
+                "3": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "4": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "5": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5},
+                "6": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "7": {"type": "off"},
+                "8": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "9": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5},
+                "10": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "11": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "12": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "13": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "14": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "15": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "16": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5},
+                "17": {"type": "work", "start": "15:30", "end": "22:30", "pos": "", "reg": 6.0, "ot": 7.0},
+                "18": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "19": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "20": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "21": {"type": "off"},
+                "22": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "23": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5},
+                "24": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "25": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "26": {"type": "work", "start": "08:00", "end": "17:00", "pos": "", "reg": 8.0, "ot": 0.0},
+                "27": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5},
+                "28": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "29": {"type": "work", "start": "13:30", "end": "22:30", "pos": "", "reg": 8.0, "ot": 0.0},
+                "30": {"type": "work", "start": "08:00", "end": "22:30", "pos": "", "reg": 8.0, "ot": 5.5},
+                "31": {"type": "off"}
+            },
+            "2026-08": {
+                "1": {"type": "off"},
+                "2": {"type": "off"},
+                "3": {"type": "work", "start": "13:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 0.0},
+                "4": {"type": "work", "start": "13:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 0.0},
+                "5": {"type": "work", "start": "09:00", "end": "18:00", "pos": "LOB", "reg": 8.0, "ot": 0.0},
+                "6": {"type": "work", "start": "09:00", "end": "18:00", "pos": "LOB", "reg": 8.0, "ot": 0.0},
+                "7": {"type": "off"},
+                "8": {"type": "work", "start": "13:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 0.0},
+                "9": {"type": "work", "start": "14:00", "end": "23:00", "pos": "LOB", "reg": 8.0, "ot": 0.0},
+                "10": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "11": {"type": "work", "start": "13:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 0.0},
+                "12": {"type": "off"},
+                "13": {"type": "work", "start": "13:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 0.0},
+                "14": {"type": "off"},
+                "15": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "16": {"type": "work", "start": "13:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 0.0},
+                "17": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "18": {"type": "off"},
+                "19": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "20": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "21": {"type": "off"},
+                "22": {"type": "work", "start": "14:00", "end": "23:00", "pos": "LOB", "reg": 8.0, "ot": 0.0},
+                "23": {"type": "work", "start": "14:00", "end": "23:00", "pos": "LOB", "reg": 8.0, "ot": 0.0},
+                "24": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "25": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "26": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "27": {"type": "off"},
+                "28": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "29": {"type": "off"},
+                "30": {"type": "work", "start": "13:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 0.0},
+                "31": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0}
+            },
+            "2026-09": {
+                "1": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "2": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "3": {"type": "off"},
+                "4": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "5": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "6": {"type": "work", "start": "07:00", "end": "17:00", "pos": "SB", "reg": 8.0, "ot": 1.0},
+                "7": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "8": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "9": {"type": "off"},
+                "10": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "11": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "12": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "13": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "14": {"type": "work", "start": "14:00", "end": "23:00", "pos": "LOB", "reg": 8.0, "ot": 0.0},
+                "15": {"type": "work", "start": "12:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 1.0},
+                "16": {"type": "work", "start": "13:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 0.0},
+                "17": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "18": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "19": {"type": "off"},
+                "20": {"type": "off"},
+                "21": {"type": "work", "start": "14:00", "end": "23:00", "pos": "LOB", "reg": 8.0, "ot": 0.0},
+                "22": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "23": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "24": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "25": {"type": "work", "start": "10:00", "end": "19:00", "pos": "LOB", "reg": 8.0, "ot": 0.0},
+                "26": {"type": "off"},
+                "27": {"type": "work", "start": "10:00", "end": "19:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "28": {"type": "work", "start": "09:00", "end": "19:00", "pos": "LOB", "reg": 8.0, "ot": 1.0},
+                "29": {"type": "off"},
+                "30": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0}
+            },
+            "2026-10": {
+                "1": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "2": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "3": {"type": "work", "start": "14:00", "end": "23:00", "pos": "LOB", "reg": 8.0, "ot": 0.0},
+                "4": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "5": {"type": "off"},
+                "6": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "7": {"type": "work", "start": "09:00", "end": "17:00", "pos": "LOB", "reg": 7.0, "ot": 0.0},
+                "8": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "9": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "10": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "11": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "12": {"type": "work", "start": "13:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 0.0},
+                "13": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "14": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "15": {"type": "off"},
+                "16": {"type": "off"},
+                "17": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "18": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "19": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "20": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "21": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "22": {"type": "off"},
+                "23": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "24": {"type": "work", "start": "13:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 0.0},
+                "25": {"type": "work", "start": "10:00", "end": "21:00", "pos": "LOB", "reg": 8.0, "ot": 2.0},
+                "26": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "27": {"type": "work", "start": "07:00", "end": "17:00", "pos": "SB", "reg": 8.0, "ot": 1.0},
+                "28": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "29": {"type": "off"},
+                "30": {"type": "work", "start": "07:00", "end": "17:00", "pos": "SB", "reg": 8.0, "ot": 1.0},
+                "31": {"type": "work", "start": "07:00", "end": "17:00", "pos": "SB", "reg": 8.0, "ot": 1.0}
+            },
+            "2026-11": {
+                "1": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "2": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "3": {"type": "off"},
+                "4": {"type": "work", "start": "12:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 1.0},
+                "5": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "6": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "7": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "8": {"type": "work", "start": "12:00", "end": "22:00", "pos": "CFC", "reg": 8.0, "ot": 1.0},
+                "9": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "10": {"type": "off"},
+                "11": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "12": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "13": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "14": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "15": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "16": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "17": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 1.0},
+                "18": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "19": {"type": "off"},
+                "20": {"type": "work", "start": "11:00", "end": "20:00", "pos": "LOB", "reg": 8.0, "ot": 1.0},
+                "21": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "22": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 1.0},
+                "23": {"type": "off"},
+                "24": {"type": "work", "start": "07:00", "end": "17:00", "pos": "SB", "reg": 8.0, "ot": 1.0},
+                "25": {"type": "work", "start": "07:00", "end": "17:00", "pos": "CFC", "reg": 8.0, "ot": 1.0},
+                "26": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 1.0},
+                "27": {"type": "work", "start": "07:00", "end": "16:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "28": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0},
+                "29": {"type": "work", "start": "14:00", "end": "23:00", "pos": "SB", "reg": 8.0, "ot": 0.0}
+            }
+        };
+
         let currentYearMonth = "";
         let scheduleData = {};
-        let settings = {
-            hourlyRate: 52,
-            otRate: 79.50,
+        let customRatesByYM = {}; // { "2025-01": { hourlyRate: 50, otRate: 75 }, ... }
+        let presets = {
             positions: ["SB", "CFC", "LOB"],
-            shifts: ["07:00-16:00", "14:00-23:00", "12:00-22:00", "11:00-20:00", "10:00-21:00", "07:00-17:00"]
+            shifts: ["07:00-16:00", "08:00-17:00", "13:30-22:30", "14:00-23:00", "12:00-22:00", "11:00-20:00", "10:00-21:00", "07:00-17:00"]
         };
         let activeEditDay = null;
         let activeDayType = 'work';
         let loadedWorkbook = null;
+
+        function getRateForYM(ym) {
+            if (customRatesByYM[ym]) {
+                return customRatesByYM[ym];
+            }
+            const [y, m] = ym.split('-').map(Number);
+            // Jan - Jul 2568 (2025-01 to 2025-07): 50/hr, OT 75/hr
+            if (y === 2025 && m >= 1 && m <= 7) {
+                return { hourlyRate: 50, otRate: 75 };
+            }
+            // Default / later period: 52/hr, OT 79.50/hr
+            return { hourlyRate: 52, otRate: 79.50 };
+        }
 
         function formatMoney(num) {
             return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         window.onload = () => {
-            const savedSettings = localStorage.getItem('shiftApp_settings_v2');
-            if (savedSettings) settings = JSON.parse(savedSettings);
+            const savedData = localStorage.getItem('shiftApp_data_faraaa_v1');
+            const savedRates = localStorage.getItem('shiftApp_rates_faraaa_v1');
+            const savedPresets = localStorage.getItem('shiftApp_presets_faraaa_v1');
 
-            const savedData = localStorage.getItem('shiftApp_data');
-            if (savedData) scheduleData = JSON.parse(savedData);
-
-            const now = new Date();
-            const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            document.getElementById('monthPicker').value = ym;
-
-            if (!savedData) {
-                loadDemoData(false);
+            if (savedData) {
+                scheduleData = JSON.parse(savedData);
             } else {
-                loadMonthData();
+                scheduleData = JSON.parse(JSON.stringify(EXCEL_IMPORTED_DATA));
+                persistData();
             }
+
+            if (savedRates) customRatesByYM = JSON.parse(savedRates);
+            if (savedPresets) presets = JSON.parse(savedPresets);
+
+            // Start at 2025-01 (มกราคม 2568) as requested, easily switchable to any month
+            document.getElementById('monthPicker').value = "2025-01";
+            loadMonthData();
         };
 
-        function changeMonth(delta) {
-            const picker = document.getElementById('monthPicker');
-            const [y, m] = picker.value.split('-').map(Number);
-            const d = new Date(y, m - 1 + delta, 1);
-            picker.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            loadMonthData();
-        }
-
-        function getDaysInMonth(year, month) {
-            return new Date(year, month, 0).getDate();
-        }
-
-        function calculateSmartPayday(year, month, targetDay) {
-            let d = new Date(year, month - 1, targetDay);
-            let shifted = false;
-            let originalDayStr = `${targetDay} ${THAI_MONTHS[month - 1].slice(0, 3)}`;
-
-            while (true) {
-                const dow = d.getDay();
-                const mmdd = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                const isWeekend = (dow === 0 || dow === 6);
-                const isHoliday = FIXED_HOLIDAYS.includes(mmdd);
-
-                if (!isWeekend && !isHoliday) break;
-                shifted = true;
-                d.setDate(d.getDate() - 1);
-            }
-
-            return {
-                dateObj: d,
-                dayNum: d.getDate(),
-                monthShort: THAI_MONTHS[d.getMonth()].slice(0, 3),
-                dayName: THAI_DAYS_SHORT[d.getDay()],
-                shifted: shifted,
-                originalStr: originalDayStr
-            };
-        }
-
-        function computeHours(startStr, endStr) {
-            if (!startStr || !endStr) return { reg: 0, autoOt: 0, totalSpan: 0 };
-            const [sh, sm] = startStr.split(':').map(Number);
-            const [eh, em] = endStr.split(':').map(Number);
-            let startMins = sh * 60 + sm;
-            let endMins = eh * 60 + em;
-            if (endMins <= startMins) endMins += 24 * 60;
-
-            const totalSpan = (endMins - startMins) / 60;
-            if (totalSpan >= 9) {
-                const autoOt = Math.round((totalSpan - 9) * 2) / 2;
-                return { reg: 8, autoOt: autoOt, totalSpan };
-            } else if (totalSpan > 5) {
-                return { reg: Math.round((totalSpan - 1) * 2) / 2, autoOt: 0, totalSpan };
-            } else {
-                return { reg: Math.round(totalSpan * 2) / 2, autoOt: 0, totalSpan };
-            }
-        }
-
-        function loadMonthData() {
-            currentYearMonth = document.getElementById('monthPicker').value;
-            const [year, month] = currentYearMonth.split('-').map(Number);
-            const daysInMonth = getDaysInMonth(year, month);
-
-            document.getElementById('headerHourlyRate').textContent = settings.hourlyRate;
-            document.getElementById('headerOtRate').textContent = settings.otRate.toFixed(2);
-            document.getElementById('monthNameDisplay').textContent = `${THAI_MONTHS[month - 1]} ${year + 543}`;
-            document.getElementById('c2Title').textContent = `วีค 2 • วันที่ 16 – ${daysInMonth}`;
-
-            const p1 = calculateSmartPayday(year, month, 15);
-            const p2 = calculateSmartPayday(year, month, 25);
-
-            document.getElementById('payday1Badge').innerHTML = renderPaydayBadge(p1, 15);
-            document.getElementById('payday2Badge').innerHTML = renderPaydayBadge(p2, 25);
-
-            if (!scheduleData[currentYearMonth]) {
-                scheduleData[currentYearMonth] = {};
-            }
-
-            renderTableAndStats(year, month, daysInMonth);
-        }
-
-        function renderPaydayBadge(p, origDay) {
-            if (p.shifted) {
-                return `
-                    <div class="inline-flex flex-col items-end">
-                        <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-                            <i class="fa-solid fa-sack-dollar mr-1"></i>ออก ${p.dayName} ${p.dayNum} ${p.monthShort}
-                        </span>
-                        <span class="text-[10px] text-orange-600 font-medium mt-0.5">เลื่อนเร็วขึ้น (ปกติวันที่ ${origDay})</span>
-                    </div>
-                `;
-            }
-            return `
-                <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-md inline-block">
-                    <i class="fa-solid fa-sack-dollar mr-1"></i>เงินออก ${p.dayName} ${p.dayNum} ${p.monthShort}
-                </span>
-            `;
-        }
-
-        function renderTableAndStats(year, month, daysInMonth) {
-            const tbody = document.getElementById('scheduleTableBody');
-            tbody.innerHTML = '';
-
-            const monthRecords = scheduleData[currentYearMonth] || {};
-
-            let c1 = { workDays: 0, offDays: 0, regHrs: 0, otHrs: 0 };
-            let c2 = { workDays: 0, offDays: 0, regHrs: 0, otHrs: 0 };
-
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dateObj = new Date(year, month - 1, day);
-                const dow = dateObj.getDay();
-                const isWeekend = (dow === 0 || dow === 6);
-                const rec = monthRecords[day];
-
-                let rowClass = "hover:bg-sky-50/60 cursor-pointer transition select-none";
-                if (day === 15) rowClass += " border-b-2 border-slate-400";
-
-                let timeCellsHtml = '';
-                let posHtml = '<span class="text-slate-300">-</span>';
-                let hrsHtml = '<span class="text-slate-300">-</span>';
-                let otHtml = '<span class="text-slate-300">-</span>';
-
-                if (rec && rec.type === 'off') {
-                    rowClass += " bg-slate-100/80";
-                    timeCellsHtml = `<td colspan="2" class="py-2.5 px-2 font-bold text-rose-500 tracking-wide">หยุด</td>`;
-                    if (day <= 15) c1.offDays++; else c2.offDays++;
-                } else if (rec && rec.type === 'work') {
-                    const { reg } = computeHours(rec.start, rec.end);
-                    const otVal = Number(rec.ot || 0);
-
-                    if (day <= 15) {
-                        c1.workDays++;
-                        c1.regHrs += reg;
-                        c1.otHrs += otVal;
-                    } else {
-                        c2.workDays++;
-                        c2.regHrs += reg;
-                        c2.otHrs += otVal;
-                    }
-
-                    const isAfternoon = rec.start >= "12:00";
-                    const timeColor = isAfternoon ? "text-indigo-600" : "text-sky-700";
-
-                    timeCellsHtml = `
-                        <td class="py-2.5 px-2 font-semibold ${timeColor}">${rec.start}</td>
-                        <td class="py-2.5 px-2 font-semibold ${timeColor}">${rec.end}</td>
-                    `;
-                    posHtml = rec.pos ? `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-xs">${rec.pos}</span>` : '-';
-                    hrsHtml = `<span class="font-medium text-slate-700">${reg}</span>`;
-                    if (otVal > 0) {
-                        otHtml = `<span class="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-bold text-xs">OT ${otVal} ชม.</span>`;
-                    }
-                } else {
-                    timeCellsHtml = `
-                        <td class="py-2.5 px-2 text-slate-300 text-xs">--:--</td>
-                        <td class="py-2.5 px-2 text-slate-300 text-xs">--:--</td>
-                    `;
-                }
-
-                const dayBadgeColor = isWeekend ? "text-rose-500 font-bold" : "text-slate-700 font-bold";
-
-                const tr = document.createElement('tr');
-                tr.className = rowClass;
-                tr.onclick = () => openDayModal(day);
-                tr.innerHTML = `
-                    <td class="py-2.5 px-2 bg-slate-50/70 border-r border-slate-100 ${dayBadgeColor}">
-                        <span>${day}</span>
-                        <span class="text-[10px] font-normal text-slate-400 ml-0.5">${THAI_DAYS_SHORT[dow]}</span>
-                    </td>
-                    ${timeCellsHtml}
-                    <td class="py-2.5 px-2">${posHtml}</td>
-                    <td class="py-2.5 px-2">${hrsHtml}</td>
-                    <td class="py-2.5 px-2">${otHtml}</td>
-                `;
-                tbody.appendChild(tr);
-            }
-
-            const c1Income = (c1.regHrs * settings.hourlyRate) + (c1.otHrs * settings.otRate);
-            const c2Income = (c2.regHrs * settings.hourlyRate) + (c2.otHrs * settings.otRate);
-
-            document.getElementById('c1WorkDays').textContent = c1.workDays;
-            document.getElementById('c1OffDays').textContent = c1.offDays;
-            document.getElementById('c1RegHrs').textContent = c1.regHrs;
-            document.getElementById('c1OtHrs').textContent = c1.otHrs;
-            document.getElementById('c1Income').textContent = `฿${formatMoney(c1Income)}`;
-
-            document.getElementById('c2WorkDays').textContent = c2.workDays;
-            document.getElementById('c2OffDays').textContent = c2.offDays;
-            document.getElementById('c2RegHrs').textContent = c2.regHrs;
-            document.getElementById('c2OtHrs').textContent = c2.otHrs;
-            document.getElementById('c2Income').textContent = `฿${formatMoney(c2Income)}`;
-
-            document.getElementById('totWorkDays').textContent = c1.workDays + c2.workDays;
-            document.getElementById('totRegHrs').textContent = c1.regHrs + c2.regHrs;
-            document.getElementById('totOtHrs').textContent = c1.otHrs + c2.otHrs;
-            document.getElementById('totIncome').textContent = `฿${formatMoney(c1Income + c2Income)}`;
-        }
-
-        // --- Excel & Sheets Import Logic ---
-        function openImportModal() {
-            document.getElementById('excelFileInput').value = '';
-            document.getElementById('sheetSelectorBox').classList.add('hidden');
-            document.getElementById('importModal').classList.remove('hidden');
-        }
-
-        function normalizeTime(val) {
-            if (val === null || val === undefined || val === '') return null;
-            // Handle Excel numeric time fraction (e.g., 0.291666 -> "07:00")
-            if (typeof val === 'number' && val > 0 && val < 1) {
-                const totalMins = Math.round(val * 24 * 60);
-                const h = Math.floor(totalMins / 60);
-                const m = totalMins % 60;
-                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-            }
-            const str = String(val).trim();
-            const match = str.match(/^(\d{1,2})[:.](\d{2})/);
-            if (match) {
-                return `${String(parseInt(match[1])).padStart(2, '0')}:${match[2]}`;
-            }
-            return null;
-        }
-
-        function parseRowsIntoSchedule(rows) {
-            const [year, month] = currentYearMonth.split('-').map(Number);
-            const daysInMonth = getDaysInMonth(year, month);
-            if (!scheduleData[currentYearMonth]) scheduleData[currentYearMonth] = {};
-
-            let importedCount = 0;
-
-            rows.forEach(row => {
-                if (!Array.isArray(row) || row.length < 2) return;
-                // Clean cells
-                const cells = row.map(c => (c === null || c === undefined) ? '' : String(c).trim());
-
-                // Find day number (1-31) in first 2 columns
-                let dayNum = null;
-                let colOffset = 0;
-                if (/^\d{1,2}$/.test(cells[0]) && parseInt(cells[0]) >= 1 && parseInt(cells[0]) <= daysInMonth) {
-                    dayNum = parseInt(cells[0]);
-                    colOffset = 1;
-                } else if (cells.length > 2 && /^\d{1,2}$/.test(cells[1]) && parseInt(cells[1]) >= 1 && parseInt(cells[1]) <= daysInMonth) {
-                    dayNum = parseInt(cells[1]);
-                    colOffset = 2;
-                }
-
-                if (!dayNum) return;
-
-                const rowText = cells.slice(colOffset).join(' ');
-                if (rowText.includes('หยุด')) {
-                    scheduleData[currentYearMonth][dayNum] = { type: 'off' };
-                    importedCount++;
-                    return;
-                }
-
-                // Look for start & end times
-                const rawStart = row[colOffset];
-                const rawEnd = row[colOffset + 1];
-                const start = normalizeTime(rawStart);
-                const end = normalizeTime(rawEnd);
-
-                if (start && end) {
-                    const posRaw = cells[colOffset + 2] || '';
-                    const pos = (posRaw && posRaw !== '-' && !posRaw.includes('OT')) ? posRaw.toUpperCase() : '';
-
-                    // Check if OT is explicitly written anywhere in the remaining columns (e.g., "OT 1 ชม." or "1")
-                    let explicitOt = null;
-                    for (let i = colOffset + 2; i < cells.length; i++) {
-                        const c = cells[i];
-                        const otMatch = c.match(/OT\s*([\d.]+)/i);
-                        if (otMatch) {
-                            explicitOt = parseFloat(otMatch[1]);
-                            break;
-                        }
-                    }
-
-                    const { autoOt } = computeHours(start, end);
-                    const finalOt = explicitOt !== null ? explicitOt : autoOt;
-
-                    scheduleData[currentYearMonth][dayNum] = {
-                        type: 'work',
-                        start,
-                        end,
-                        pos,
-                        ot: finalOt
-                    };
-                    importedCount++;
-                }
-            });
-
-            return importedCount;
-        }
-
-        function handleExcelUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                loadedWorkbook = XLSX.read(data, { type: 'array' });
-
-                if (loadedWorkbook.SheetNames.length > 1) {
-                    const sel = document.getElementById('workbookSheetSelect');
-                    sel.innerHTML = loadedWorkbook.SheetNames.map(name => `<option value="${name}">${name}</option>`).join('');
-                    document.getElementById('sheetSelectorBox').classList.remove('hidden');
-                } else {
-                    importFromSheetName(loadedWorkbook.SheetNames[0]);
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function processSelectedSheet() {
-            const sheetName = document.getElementById('workbookSheetSelect').value;
-            importFromSheetName(sheetName);
-        }
-
-        function importFromSheetName(sheetName) {
-            const worksheet = loadedWorkbook.Sheets[sheetName];
-            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true });
-            const count = parseRowsIntoSchedule(rows);
-
-            if (count > 0) {
-                persistData();
-                closeModal('importModal');
-                loadMonthData();
-                alert(`นำเข้าข้อมูลสำเร็จ ${count} วัน!`);
-            } else {
-                alert("ไม่พบข้อมูลตารางกะงานในชีตนี้ (กรุณาตรวจสอบว่ามีคอลัมน์ วันที่, เข้างาน, เลิกงาน)");
-            }
-        }
-
-        function handlePastedData() {
-            const text = document.getElementById('pasteDataArea').value.trim();
-            if (!text) return;
-
-            const lines = text.split(/\r?\n/);
-            const rows = lines.map(line => {
-                // Split by tab (from Excel/Sheets) or multiple spaces
-                if (line.includes('\t')) return line.split('\t');
-                return line.trim().split(/\s+/);
-            });
-
-            const count = parseRowsIntoSchedule(rows);
-            if (count > 0) {
-                persistData();
-                document.getElementById('pasteDataArea').value = '';
-                closeModal('importModal');
-                loadMonthData();
-                alert(`นำเข้าข้อมูลสำเร็จ ${count} วัน!`);
-            } else {
-                alert("ไม่สามารถอ่านข้อมูลได้ กรุณาก๊อปปี้แถวที่มี วันที่ เข้างาน เลิกงาน ตำแหน่ง มาวางครับ");
-            }
-        }
-
-        // --- Single Day Modal Logic ---
-        function openDayModal(day) {
-            activeEditDay = day;
-            const [year, month] = currentYearMonth.split('-').map(Number);
-            const dow = new Date(year, month - 1, day).getDay();
-            document.getElementById('modalDayTitle').textContent = `วันที่ ${day} ${THAI_MONTHS[month - 1]} (${THAI_DAYS_SHORT[dow]})`;
-
-            const shiftContainer = document.getElementById('quickShiftButtons');
-            shiftContainer.innerHTML = settings.shifts.map(s => `
-                <button type="button" onclick="applyQuickShift('${s}')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-semibold transition">
-                    ${s}
-                </button>
-            `).join('');
-
-            const posContainer = document.getElementById('quickPosButtons');
-            posContainer.innerHTML = settings.positions.map(p => `
-                <button type="button" onclick="document.getElementById('editPos').value='${p}'" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
-                    ${p}
-                </button>
-            `).join('');
-
-            const rec = scheduleData[currentYearMonth]?.[day];
-            if (rec && rec.type === 'off') {
-                setDayType('off');
-            } else if (rec && rec.type === 'work') {
-                setDayType('work');
-                document.getElementById('editStart').value = rec.start || '07:00';
-                document.getElementById('editEnd').value = rec.end || '16:00';
-                document.getElementById('editPos').value = rec.pos || settings.positions[0] || '';
-                document.getElementById('editOT').value = rec.ot || 0;
-            } else {
-                setDayType('work');
-                document.getElementById('editStart').value = '07:00';
-                document.getElementById('editEnd').value = '16:00';
-                document.getElementById('editPos').value = settings.positions[0] || 'SB';
-                document.getElementById('editOT').value = 0;
-            }
-
-            document.getElementById('dayModal').classList.remove('hidden');
-        }
-
-        function setDayType(type) {
-            activeDayType = type;
-            const btnWork = document.getElementById('btnTypeWork');
-            const btnOff = document.getElementById('btnTypeOff');
-            const btnEmpty = document.getElementById('btnTypeEmpty');
-            const workFields = document.getElementById('workFieldsContainer');
-
-            [btnWork, btnOff, btnEmpty].forEach(b => {
-                b.className = "py-2 rounded-xl text-xs font-semibold border border-slate-200 text-slate-600 bg-white transition flex items-center justify-center gap-1.5";
-            });
-
-            if (type === 'work') {
-                btnWork.className = "py-2 rounded-xl text-xs font-semibold border border-sky-500 text-white bg-sky-500 transition flex items-center justify-center gap-1.5 shadow-xs";
-                workFields.classList.remove('opacity-40', 'pointer-events-none');
-            } else if (type === 'off') {
-                btnOff.className = "py-2 rounded-xl text-xs font-semibold border border-rose-500 text-white bg-rose-500 transition flex items-center justify-center gap-1.5 shadow-xs";
-                workFields.classList.add('opacity-40', 'pointer-events-none');
-            } else {
-                btnEmpty.className = "py-2 rounded-xl text-xs font-semibold border border-slate-700 text-white bg-slate-700 transition flex items-center justify-center gap-1.5 shadow-xs";
-                workFields.classList.add('opacity-40', 'pointer-events-none');
-            }
-        }
-
-        function applyQuickShift(shiftStr) {
-            const [s, e] = shiftStr.split('-');
-            document.getElementById('editStart').value = s;
-            document.getElementById('editEnd').value = e;
-            autoCalcSingleOT();
-        }
-
-        function autoCalcSingleOT() {
-            const s = document.getElementById('editStart').value;
-            const e = document.getElementById('editEnd').value;
-            const { autoOt } = computeHours(s, e);
-            document.getElementById('editOT').value = autoOt;
-        }
-
-        function adjustOT(delta) {
-            const input = document.getElementById('editOT');
-            const val = Math.max(0, (parseFloat(input.value) || 0) + delta);
-            input.value = val;
-        }
-
-        function saveSingleDay() {
-            if (!scheduleData[currentYearMonth]) scheduleData[currentYearMonth] = {};
-
-            if (activeDayType === 'empty') {
-                delete scheduleData[currentYearMonth][activeEditDay];
-            } else if (activeDayType === 'off') {
-                scheduleData[currentYearMonth][activeEditDay] = { type: 'off' };
-            } else {
-                scheduleData[currentYearMonth][activeEditDay] = {
-                    type: 'work',
-                    start: document.getElementById('editStart').value,
-                    end: document.getElementById('editEnd').value,
-                    pos: document.getElementById('editPos').value.trim().toUpperCase(),
-                    ot: parseFloat(document.getElementById('editOT').value) || 0
-                };
-            }
-
-            persistData();
-            closeModal('dayModal');
-            loadMonthData();
-        }
-
-        // --- Bulk Planner Modal Logic ---
-        function openBulkModal() {
-            const [year, month] = currentYearMonth.split('-').map(Number);
-            const daysInMonth = getDaysInMonth(year, month);
-
-            const startSel = document.getElementById('bulkStartDay');
-            const endSel = document.getElementById('bulkEndDay');
-            startSel.innerHTML = '';
-            endSel.innerHTML = '';
-
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dow = THAI_DAYS_SHORT[new Date(year, month - 1, d).getDay()];
-                startSel.innerHTML += `<option value="${d}">วันที่ ${d} (${dow})</option>`;
-                endSel.innerHTML += `<option value="${d}">วันที่ ${d} (${dow})</option>`;
-            }
-            endSel.value = Math.min(7, daysInMonth);
-
-            document.getElementById('bulkShiftPresets').innerHTML = settings.shifts.map(s => `
-                <button type="button" onclick="const [a,b]='${s}'.split('-'); document.getElementById('bulkStart').value=a; document.getElementById('bulkEnd').value=b;" class="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-semibold">
-                    ${s}
-                </button>
-            `).join('');
-
-            document.getElementById('bulkPosPresets').innerHTML = settings.positions.map(p => `
-                <button type="button" onclick="document.getElementById('bulkPos').value='${p}'" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
-                    ${p}
-                </button>
-            `).join('');
-
-            document.getElementById('bulkModal').classList.remove('hidden');
-        }
-
-        function setBulkRange(s, e) {
-            const [year, month] = currentYearMonth.split('-').map(Number);
-            const maxD = getDaysInMonth(year, month);
-            document.getElementById('bulkStartDay').value = Math.min(s, maxD);
-            document.getElementById('bulkEndDay').value = Math.min(e, maxD);
-        }
-
-        function applyBulkSchedule() {
-            const [year, month] = currentYearMonth.split('-').map(Number);
-            const sDay = parseInt(document.getElementById('bulkStartDay').value);
-            const eDay = parseInt(document.getElementById('bulkEndDay').value);
-            const start = document.getElementById('bulkStart').value;
-            const end = document.getElementById('bulkEnd').value;
-            const pos = document.getElementById('bulkPos').value.trim().toUpperCase();
-            const { autoOt } = computeHours(start, end);
-
-            const offDaysOfWeek = Array.from(document.querySelectorAll('#bulkDayOffCheckboxes input:checked')).map(cb => parseInt(cb.value));
-
-            if (!scheduleData[currentYearMonth]) scheduleData[currentYearMonth] = {};
-
-            const from = Math.min(sDay, eDay);
-            const to = Math.max(sDay, eDay);
-
-            for (let d = from; d <= to; d++) {
-                const dow = new Date(year, month - 1, d).getDay();
-                if (offDaysOfWeek.includes(dow)) {
-                    scheduleData[currentYearMonth][d] = { type: 'off' };
-                } else {
-                    scheduleData[currentYearMonth][d] = {
-                        type: 'work',
-                        start,
-                        end,
-                        pos,
-                        ot: autoOt
-                    };
-                }
-            }
-
-            persistData();
-            closeModal('bulkModal');
-            loadMonthData();
-        }
-
-        // --- Settings Modal Logic ---
-        function openSettingsModal() {
-            document.getElementById('setHourlyRate').value = settings.hourlyRate;
-            document.getElementById('setOtRate').value = settings.otRate;
-            document.getElementById('setPositions').value = settings.positions.join(', ');
-            document.getElementById('setShifts').value = settings.shifts.join(', ');
-            document.getElementById('settingsModal').classList.remove('hidden');
-        }
-
-        function saveSettings() {
-            settings.hourlyRate = parseFloat(document.getElementById('setHourlyRate').value) || 0;
-            settings.otRate = parseFloat(document.getElementById('setOtRate').value) || 0;
-            settings.positions = document.getElementById('setPositions').value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
-            settings.shifts = document.getElementById('setShifts').value.split(',').map(s => s.trim()).filter(s => s.includes('-'));
-
-            localStorage.setItem('shiftApp_settings_v2', JSON.stringify(settings));
-            closeModal('settingsModal');
-            loadMonthData();
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
-        }
-
-        function persistData() {
-            localStorage.setItem('shiftApp_data', JSON.stringify(scheduleData));
-        }
-
-        function clearCurrentMonth() {
-            if (!confirm("ต้องการล้างข้อมูลทั้งหมดของเดือนนี้ใช่หรือไม่?")) return;
-            scheduleData[currentYearMonth] = {};
-            persistData();
-            loadMonthData();
-        }
-
-        // --- Demo Data ---
-        function loadDemoData(confirmOverwrite = true) {
-            if (confirmOverwrite && !confirm("ต้องการใส่ข้อมูลตัวอย่างลงในเดือนนี้ใช่หรือไม่?")) return;
-
-            const ym = document.getElementById('monthPicker').value;
-            const [year, month] = ym.split('-').map(Number);
-            const daysInMonth = getDaysInMonth(year, month);
-
-            const samplePattern = {
-                1:  { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
-                2:  { type: 'work', start: '14:00', end: '23:00', pos: 'SB', ot: 0 },
-                3:  { type: 'off' },
-                4:  { type: 'work', start: '12:00', end: '22:00', pos: 'CFC', ot: 1 },
-                5:  { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
-                6:  { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
-                7:  { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
-                8:  { type: 'work', start: '12:00', end: '22:00', pos: 'CFC', ot: 1 },
-                9:  { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
-                10: { type: 'off' },
-                11: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
-                12: { type: 'work', start: '14:00', end: '23:00', pos: 'SB', ot: 0 },
-                13: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
-                14: { type: 'work', start: '14:00', end: '23:00', pos: 'SB', ot: 0 },
-                15: { type: 'work', start: '14:00', end: '23:00', pos: 'SB', ot: 0 },
-                16: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
-                17: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 1 },
-                18: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
-                19: { type: 'off' },
-                20: { type: 'work', start: '11:00', end: '20:00', pos: 'LOB', ot: 1 },
-                21: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
-                22: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 1 },
-                23: { type: 'off' },
-                24: { type: 'work', start: '07:00', end: '17:00', pos: 'SB', ot: 1 },
-                25: { type: 'work', start: '07:00', end: '17:00', pos: 'CFC', ot: 1 },
-                26: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 1 },
-                27: { type: 'work', start: '07:00', end: '16:00', pos: 'SB', ot: 0 },
-                28: { type: 'work', start: '14:00', end: '23:00', pos: 'SB', ot: 0 },
-                29: { type: 'work', start: '14:00', end: '23:00', pos: 'SB', ot: 0 }
-            };
-
-            scheduleData[ym] = {};
-            for (let d = 1; d <= daysInMonth; d++) {
-                if (samplePattern[d]) scheduleData[ym][d] = samplePattern[d];
-            }
-
-            persistData();
-            loadMonthData();
-        }
-
-        // --- Export Real Excel (.xlsx) ---
-        function exportExcel() {
-            const [year, month] = currentYearMonth.split('-').map(Number);
-            const daysInMonth = getDaysInMonth(year, month);
-            const records = scheduleData[currentYearMonth] || {};
-
-            const wsData = [
-                [`ตารางทำงาน ${THAI_MONTHS[month - 1]} ${year + 543}`],
-                ["วันที่", "วัน", "เข้างาน", "เลิกงาน", "ตำแหน่ง", "ชม.ทำงาน", "OT (ชม.)", "ค่าแรงปกติ (บาท)", "ค่า OT (บาท)", "รวมรับ (บาท)"]
-            ];
-
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dow = THAI_DAYS_SHORT[new Date(year, month - 1, d).getDay()];
-                const rec = records[d];
-                if (!rec) {
-                    wsData.push([d, dow, "", "", "", "", "", "", "", ""]);
-                } else if (rec.type === 'off') {
-                    wsData.push([d, dow, "หยุด", "หยุด", "-", 0, 0, 0, 0, 0]);
-                } else {
-                    const { reg } = computeHours(rec.start, rec.end);
-                    const ot = rec.ot || 0;
-                    const regPay = reg * settings.hourlyRate;
-                    const otPay = ot * settings.otRate;
-                    wsData.push([d, dow, rec.start, rec.end, rec.pos || "-", reg, ot, regPay, otPay, regPay + otPay]);
-                }
-            }
-
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            XLSX.utils.book_append_sheet(wb, ws, `${THAI_MONTHS[month - 1]}`);
-            XLSX.writeFile(wb, `ตารางกะงาน_${THAI_MONTHS[month - 1]}_${year + 543}.xlsx`);
-        }
-    </script>
-</body>
-</html>
+        function resetToExcelData() {
+            if (!confirm("ต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นข้อมูลจากไฟล์ FARAAA.xlsx และเรทตามช่วงเวลาใช่หรือไม่?")) return;
