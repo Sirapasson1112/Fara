@@ -817,3 +817,607 @@
 
         function resetToExcelData() {
             if (!confirm("ต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นข้อมูลจากไฟล์ FARAAA.xlsx และเรทตามช่วงเวลาใช่หรือไม่?")) return;
+            scheduleData = JSON.parse(JSON.stringify(EXCEL_IMPORTED_DATA));
+            customRatesByYM = {};
+            persistData();
+            localStorage.removeItem('shiftApp_rates_faraaa_v1');
+            loadMonthData();
+        }
+
+        function changeMonth(delta) {
+            const picker = document.getElementById('monthPicker');
+            const [y, m] = picker.value.split('-').map(Number);
+            const d = new Date(y, m - 1 + delta, 1);
+            picker.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            loadMonthData();
+        }
+
+        function getDaysInMonth(year, month) {
+            return new Date(year, month, 0).getDate();
+        }
+
+        function calculateSmartPayday(year, month, targetDay) {
+            let d = new Date(year, month - 1, targetDay);
+            let shifted = false;
+            let originalDayStr = `${targetDay} ${THAI_MONTHS[month - 1].slice(0, 3)}`;
+
+            while (true) {
+                const dow = d.getDay();
+                const mmdd = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const isWeekend = (dow === 0 || dow === 6);
+                const isHoliday = FIXED_HOLIDAYS.includes(mmdd);
+
+                if (!isWeekend && !isHoliday) break;
+                shifted = true;
+                d.setDate(d.getDate() - 1);
+            }
+
+            return {
+                dateObj: d,
+                dayNum: d.getDate(),
+                monthShort: THAI_MONTHS[d.getMonth()].slice(0, 3),
+                dayName: THAI_DAYS_SHORT[d.getDay()],
+                shifted: shifted,
+                originalStr: originalDayStr
+            };
+        }
+
+        function computeHours(startStr, endStr) {
+            if (!startStr || !endStr) return { reg: 0, autoOt: 0, totalSpan: 0 };
+            const [sh, sm] = startStr.split(':').map(Number);
+            const [eh, em] = endStr.split(':').map(Number);
+            let startMins = sh * 60 + sm;
+            let endMins = eh * 60 + em;
+            if (endMins <= startMins) endMins += 24 * 60;
+
+            const totalSpan = (endMins - startMins) / 60;
+            if (totalSpan >= 9) {
+                const autoOt = Math.round((totalSpan - 9) * 2) / 2;
+                return { reg: 8, autoOt: autoOt, totalSpan };
+            } else if (totalSpan > 5) {
+                return { reg: Math.round((totalSpan - 1) * 2) / 2, autoOt: 0, totalSpan };
+            } else {
+                return { reg: Math.round(totalSpan * 2) / 2, autoOt: 0, totalSpan };
+            }
+        }
+
+        function loadMonthData() {
+            currentYearMonth = document.getElementById('monthPicker').value;
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const daysInMonth = getDaysInMonth(year, month);
+            const rate = getRateForYM(currentYearMonth);
+
+            document.getElementById('headerHourlyRate').textContent = rate.hourlyRate;
+            document.getElementById('headerOtRate').textContent = rate.otRate.toFixed(2);
+            document.getElementById('monthNameDisplay').textContent = `${THAI_MONTHS[month - 1]} ${year + 543}`;
+            document.getElementById('c2Title').textContent = `วีค 2 • วันที่ 16 – ${daysInMonth}`;
+
+            const p1 = calculateSmartPayday(year, month, 15);
+            const p2 = calculateSmartPayday(year, month, 25);
+
+            document.getElementById('payday1Badge').innerHTML = renderPaydayBadge(p1, 15);
+            document.getElementById('payday2Badge').innerHTML = renderPaydayBadge(p2, 25);
+
+            if (!scheduleData[currentYearMonth]) {
+                scheduleData[currentYearMonth] = {};
+            }
+
+            renderTableAndStats(year, month, daysInMonth, rate);
+        }
+
+        function renderPaydayBadge(p, origDay) {
+            if (p.shifted) {
+                return `
+                    <div class="inline-flex flex-col items-end">
+                        <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                            <i class="fa-solid fa-sack-dollar mr-1"></i>ออก ${p.dayName} ${p.dayNum} ${p.monthShort}
+                        </span>
+                        <span class="text-[10px] text-orange-600 font-medium mt-0.5">เลื่อนเร็วขึ้น (ปกติวันที่ ${origDay})</span>
+                    </div>
+                `;
+            }
+            return `
+                <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-md inline-block">
+                    <i class="fa-solid fa-sack-dollar mr-1"></i>เงินออก ${p.dayName} ${p.dayNum} ${p.monthShort}
+                </span>
+            `;
+        }
+
+        function renderTableAndStats(year, month, daysInMonth, rate) {
+            const tbody = document.getElementById('scheduleTableBody');
+            tbody.innerHTML = '';
+
+            const monthRecords = scheduleData[currentYearMonth] || {};
+
+            let c1 = { workDays: 0, offDays: 0, regHrs: 0, otHrs: 0 };
+            let c2 = { workDays: 0, offDays: 0, regHrs: 0, otHrs: 0 };
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateObj = new Date(year, month - 1, day);
+                const dow = dateObj.getDay();
+                const isWeekend = (dow === 0 || dow === 6);
+                const rec = monthRecords[day];
+
+                let rowClass = "hover:bg-sky-50/60 cursor-pointer transition select-none";
+                if (day === 15) rowClass += " border-b-2 border-slate-400";
+
+                let timeCellsHtml = '';
+                let posHtml = '<span class="text-slate-300">-</span>';
+                let hrsHtml = '<span class="text-slate-300">-</span>';
+                let otHtml = '<span class="text-slate-300">-</span>';
+
+                if (rec && rec.type === 'off') {
+                    rowClass += " bg-slate-100/80";
+                    timeCellsHtml = `<td colspan="2" class="py-2.5 px-2 font-bold text-rose-500 tracking-wide">หยุด</td>`;
+                    if (day <= 15) c1.offDays++; else c2.offDays++;
+                } else if (rec && rec.type === 'work') {
+                    const reg = (typeof rec.reg === 'number') ? rec.reg : computeHours(rec.start, rec.end).reg;
+                    const otVal = Number(rec.ot || 0);
+
+                    if (day <= 15) {
+                        c1.workDays++;
+                        c1.regHrs += reg;
+                        c1.otHrs += otVal;
+                    } else {
+                        c2.workDays++;
+                        c2.regHrs += reg;
+                        c2.otHrs += otVal;
+                    }
+
+                    const isAfternoon = rec.start >= "12:00";
+                    const timeColor = isAfternoon ? "text-indigo-600" : "text-sky-700";
+
+                    timeCellsHtml = `
+                        <td class="py-2.5 px-2 font-semibold ${timeColor}">${rec.start}</td>
+                        <td class="py-2.5 px-2 font-semibold ${timeColor}">${rec.end}</td>
+                    `;
+                    posHtml = rec.pos ? `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-xs">${rec.pos}</span>` : '<span class="text-slate-300">-</span>';
+                    hrsHtml = `<span class="font-medium text-slate-700">${reg}</span>`;
+                    if (otVal > 0) {
+                        otHtml = `<span class="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-bold text-xs">OT ${otVal} ชม.</span>`;
+                    }
+                } else {
+                    timeCellsHtml = `
+                        <td class="py-2.5 px-2 text-slate-300 text-xs">--:--</td>
+                        <td class="py-2.5 px-2 text-slate-300 text-xs">--:--</td>
+                    `;
+                }
+
+                const dayBadgeColor = isWeekend ? "text-rose-500 font-bold" : "text-slate-700 font-bold";
+
+                const tr = document.createElement('tr');
+                tr.className = rowClass;
+                tr.onclick = () => openDayModal(day);
+                tr.innerHTML = `
+                    <td class="py-2.5 px-2 bg-slate-50/70 border-r border-slate-100 ${dayBadgeColor}">
+                        <span>${day}</span>
+                        <span class="text-[10px] font-normal text-slate-400 ml-0.5">${THAI_DAYS_SHORT[dow]}</span>
+                    </td>
+                    ${timeCellsHtml}
+                    <td class="py-2.5 px-2">${posHtml}</td>
+                    <td class="py-2.5 px-2">${hrsHtml}</td>
+                    <td class="py-2.5 px-2">${otHtml}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            const c1Income = (c1.regHrs * rate.hourlyRate) + (c1.otHrs * rate.otRate);
+            const c2Income = (c2.regHrs * rate.hourlyRate) + (c2.otHrs * rate.otRate);
+
+            document.getElementById('c1WorkDays').textContent = c1.workDays;
+            document.getElementById('c1OffDays').textContent = c1.offDays;
+            document.getElementById('c1RegHrs').textContent = c1.regHrs;
+            document.getElementById('c1OtHrs').textContent = c1.otHrs;
+            document.getElementById('c1Income').textContent = `฿${formatMoney(c1Income)}`;
+
+            document.getElementById('c2WorkDays').textContent = c2.workDays;
+            document.getElementById('c2OffDays').textContent = c2.offDays;
+            document.getElementById('c2RegHrs').textContent = c2.regHrs;
+            document.getElementById('c2OtHrs').textContent = c2.otHrs;
+            document.getElementById('c2Income').textContent = `฿${formatMoney(c2Income)}`;
+
+            document.getElementById('totWorkDays').textContent = c1.workDays + c2.workDays;
+            document.getElementById('totRegHrs').textContent = c1.regHrs + c2.regHrs;
+            document.getElementById('totOtHrs').textContent = c1.otHrs + c2.otHrs;
+            document.getElementById('totIncome').textContent = `฿${formatMoney(c1Income + c2Income)}`;
+        }
+
+        // --- Excel & Sheets Import Logic ---
+        function openImportModal() {
+            document.getElementById('excelFileInput').value = '';
+            document.getElementById('sheetSelectorBox').classList.add('hidden');
+            document.getElementById('importModal').classList.remove('hidden');
+        }
+
+        function normalizeTime(val) {
+            if (val === null || val === undefined || val === '') return null;
+            if (typeof val === 'number' && val > 0 && val < 1) {
+                const totalMins = Math.round(val * 24 * 60);
+                const h = Math.floor(totalMins / 60);
+                const m = totalMins % 60;
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            }
+            const str = String(val).trim();
+            const match = str.match(/^(\d{1,2})[:.](\d{2})/);
+            if (match) {
+                return `${String(parseInt(match[1])).padStart(2, '0')}:${match[2]}`;
+            }
+            return null;
+        }
+
+        function parseRowsIntoSchedule(rows) {
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const daysInMonth = getDaysInMonth(year, month);
+            if (!scheduleData[currentYearMonth]) scheduleData[currentYearMonth] = {};
+
+            let importedCount = 0;
+
+            rows.forEach(row => {
+                if (!Array.isArray(row) || row.length < 2) return;
+                const cells = row.map(c => (c === null || c === undefined) ? '' : String(c).trim());
+
+                let dayNum = null;
+                let colOffset = 0;
+                if (/^\d{1,2}$/.test(cells[0]) && parseInt(cells[0]) >= 1 && parseInt(cells[0]) <= daysInMonth) {
+                    dayNum = parseInt(cells[0]);
+                    colOffset = 1;
+                } else if (cells.length > 2 && /^\d{1,2}$/.test(cells[1]) && parseInt(cells[1]) >= 1 && parseInt(cells[1]) <= daysInMonth) {
+                    dayNum = parseInt(cells[1]);
+                    colOffset = 2;
+                }
+
+                if (!dayNum) return;
+
+                const rowText = cells.slice(colOffset).join(' ');
+                if (rowText.includes('หยุด') || rowText.includes('เที่ยว')) {
+                    scheduleData[currentYearMonth][dayNum] = { type: 'off' };
+                    importedCount++;
+                    return;
+                }
+
+                const start = normalizeTime(row[colOffset]);
+                const end = normalizeTime(row[colOffset + 1]);
+
+                if (start && end) {
+                    const posRaw = cells[colOffset + 2] || '';
+                    const pos = (posRaw && posRaw !== '-' && !/^\d+$/.test(posRaw) && !posRaw.includes('OT')) ? posRaw.toUpperCase() : '';
+
+                    let explicitOt = null;
+                    for (let i = colOffset + 2; i < cells.length; i++) {
+                        const c = cells[i];
+                        const otMatch = c.match(/OT\s*([\d.]+)/i);
+                        if (otMatch) {
+                            explicitOt = parseFloat(otMatch[1]);
+                            break;
+                        }
+                    }
+
+                    const { reg, autoOt } = computeHours(start, end);
+                    const finalOt = explicitOt !== null ? explicitOt : autoOt;
+
+                    scheduleData[currentYearMonth][dayNum] = {
+                        type: 'work',
+                        start,
+                        end,
+                        pos,
+                        reg,
+                        ot: finalOt
+                    };
+                    importedCount++;
+                }
+            });
+
+            return importedCount;
+        }
+
+        function handleExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                loadedWorkbook = XLSX.read(data, { type: 'array' });
+
+                if (loadedWorkbook.SheetNames.length > 1) {
+                    const sel = document.getElementById('workbookSheetSelect');
+                    sel.innerHTML = loadedWorkbook.SheetNames.map(name => `<option value="${name}">${name}</option>`).join('');
+                    document.getElementById('sheetSelectorBox').classList.remove('hidden');
+                } else {
+                    importFromSheetName(loadedWorkbook.SheetNames[0]);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processSelectedSheet() {
+            const sheetName = document.getElementById('workbookSheetSelect').value;
+            importFromSheetName(sheetName);
+        }
+
+        function importFromSheetName(sheetName) {
+            const worksheet = loadedWorkbook.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true });
+            const count = parseRowsIntoSchedule(rows);
+
+            if (count > 0) {
+                persistData();
+                closeModal('importModal');
+                loadMonthData();
+                alert(`นำเข้าข้อมูลสำเร็จ ${count} วัน!`);
+            } else {
+                alert("ไม่พบข้อมูลตารางกะงานในชีตนี้");
+            }
+        }
+
+        function handlePastedData() {
+            const text = document.getElementById('pasteDataArea').value.trim();
+            if (!text) return;
+
+            const lines = text.split(/\r?\n/);
+            const rows = lines.map(line => line.includes('\t') ? line.split('\t') : line.trim().split(/\s+/));
+
+            const count = parseRowsIntoSchedule(rows);
+            if (count > 0) {
+                persistData();
+                document.getElementById('pasteDataArea').value = '';
+                closeModal('importModal');
+                loadMonthData();
+                alert(`นำเข้าข้อมูลสำเร็จ ${count} วัน!`);
+            } else {
+                alert("ไม่สามารถอ่านข้อมูลได้ กรุณาก๊อปปี้แถวที่มี วันที่ เข้างาน เลิกงาน มาวางครับ");
+            }
+        }
+
+        // --- Single Day Modal Logic ---
+        function openDayModal(day) {
+            activeEditDay = day;
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const dow = new Date(year, month - 1, day).getDay();
+            document.getElementById('modalDayTitle').textContent = `วันที่ ${day} ${THAI_MONTHS[month - 1]} (${THAI_DAYS_SHORT[dow]})`;
+
+            document.getElementById('quickShiftButtons').innerHTML = presets.shifts.map(s => `
+                <button type="button" onclick="applyQuickShift('${s}')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-semibold transition">
+                    ${s}
+                </button>
+            `).join('');
+
+            document.getElementById('quickPosButtons').innerHTML = presets.positions.map(p => `
+                <button type="button" onclick="document.getElementById('editPos').value='${p}'" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
+                    ${p}
+                </button>
+            `).join('');
+
+            const rec = scheduleData[currentYearMonth]?.[day];
+            if (rec && rec.type === 'off') {
+                setDayType('off');
+            } else if (rec && rec.type === 'work') {
+                setDayType('work');
+                document.getElementById('editStart').value = rec.start || '07:00';
+                document.getElementById('editEnd').value = rec.end || '16:00';
+                document.getElementById('editPos').value = rec.pos || '';
+                document.getElementById('editOT').value = rec.ot || 0;
+            } else {
+                setDayType('work');
+                document.getElementById('editStart').value = '07:00';
+                document.getElementById('editEnd').value = '16:00';
+                document.getElementById('editPos').value = 'SB';
+                document.getElementById('editOT').value = 0;
+            }
+
+            document.getElementById('dayModal').classList.remove('hidden');
+        }
+
+        function setDayType(type) {
+            activeDayType = type;
+            const btnWork = document.getElementById('btnTypeWork');
+            const btnOff = document.getElementById('btnTypeOff');
+            const btnEmpty = document.getElementById('btnTypeEmpty');
+            const workFields = document.getElementById('workFieldsContainer');
+
+            [btnWork, btnOff, btnEmpty].forEach(b => {
+                b.className = "py-2 rounded-xl text-xs font-semibold border border-slate-200 text-slate-600 bg-white transition flex items-center justify-center gap-1.5";
+            });
+
+            if (type === 'work') {
+                btnWork.className = "py-2 rounded-xl text-xs font-semibold border border-sky-500 text-white bg-sky-500 transition flex items-center justify-center gap-1.5 shadow-xs";
+                workFields.classList.remove('opacity-40', 'pointer-events-none');
+            } else if (type === 'off') {
+                btnOff.className = "py-2 rounded-xl text-xs font-semibold border border-rose-500 text-white bg-rose-500 transition flex items-center justify-center gap-1.5 shadow-xs";
+                workFields.classList.add('opacity-40', 'pointer-events-none');
+            } else {
+                btnEmpty.className = "py-2 rounded-xl text-xs font-semibold border border-slate-700 text-white bg-slate-700 transition flex items-center justify-center gap-1.5 shadow-xs";
+                workFields.classList.add('opacity-40', 'pointer-events-none');
+            }
+        }
+
+        function applyQuickShift(shiftStr) {
+            const [s, e] = shiftStr.split('-');
+            document.getElementById('editStart').value = s;
+            document.getElementById('editEnd').value = e;
+            autoCalcSingleOT();
+        }
+
+        function autoCalcSingleOT() {
+            const s = document.getElementById('editStart').value;
+            const e = document.getElementById('editEnd').value;
+            const { autoOt } = computeHours(s, e);
+            document.getElementById('editOT').value = autoOt;
+        }
+
+        function adjustOT(delta) {
+            const input = document.getElementById('editOT');
+            const val = Math.max(0, (parseFloat(input.value) || 0) + delta);
+            input.value = val;
+        }
+
+        function saveSingleDay() {
+            if (!scheduleData[currentYearMonth]) scheduleData[currentYearMonth] = {};
+
+            if (activeDayType === 'empty') {
+                delete scheduleData[currentYearMonth][activeEditDay];
+            } else if (activeDayType === 'off') {
+                scheduleData[currentYearMonth][activeEditDay] = { type: 'off' };
+            } else {
+                const start = document.getElementById('editStart').value;
+                const end = document.getElementById('editEnd').value;
+                const { reg } = computeHours(start, end);
+                scheduleData[currentYearMonth][activeEditDay] = {
+                    type: 'work',
+                    start,
+                    end,
+                    pos: document.getElementById('editPos').value.trim().toUpperCase(),
+                    reg,
+                    ot: parseFloat(document.getElementById('editOT').value) || 0
+                };
+            }
+
+            persistData();
+            closeModal('dayModal');
+            loadMonthData();
+        }
+
+        // --- Bulk Planner Modal Logic ---
+        function openBulkModal() {
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const daysInMonth = getDaysInMonth(year, month);
+
+            const startSel = document.getElementById('bulkStartDay');
+            const endSel = document.getElementById('bulkEndDay');
+            startSel.innerHTML = '';
+            endSel.innerHTML = '';
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dow = THAI_DAYS_SHORT[new Date(year, month - 1, d).getDay()];
+                startSel.innerHTML += `<option value="${d}">วันที่ ${d} (${dow})</option>`;
+                endSel.innerHTML += `<option value="${d}">วันที่ ${d} (${dow})</option>`;
+            }
+            endSel.value = Math.min(7, daysInMonth);
+
+            document.getElementById('bulkShiftPresets').innerHTML = presets.shifts.map(s => `
+                <button type="button" onclick="const [a,b]='${s}'.split('-'); document.getElementById('bulkStart').value=a; document.getElementById('bulkEnd').value=b;" class="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-semibold">
+                    ${s}
+                </button>
+            `).join('');
+
+            document.getElementById('bulkPosPresets').innerHTML = presets.positions.map(p => `
+                <button type="button" onclick="document.getElementById('bulkPos').value='${p}'" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
+                    ${p}
+                </button>
+            `).join('');
+
+            document.getElementById('bulkModal').classList.remove('hidden');
+        }
+
+        function setBulkRange(s, e) {
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const maxD = getDaysInMonth(year, month);
+            document.getElementById('bulkStartDay').value = Math.min(s, maxD);
+            document.getElementById('bulkEndDay').value = Math.min(e, maxD);
+        }
+
+        function applyBulkSchedule() {
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const sDay = parseInt(document.getElementById('bulkStartDay').value);
+            const eDay = parseInt(document.getElementById('bulkEndDay').value);
+            const start = document.getElementById('bulkStart').value;
+            const end = document.getElementById('bulkEnd').value;
+            const pos = document.getElementById('bulkPos').value.trim().toUpperCase();
+            const { reg, autoOt } = computeHours(start, end);
+
+            const offDaysOfWeek = Array.from(document.querySelectorAll('#bulkDayOffCheckboxes input:checked')).map(cb => parseInt(cb.value));
+
+            if (!scheduleData[currentYearMonth]) scheduleData[currentYearMonth] = {};
+
+            const from = Math.min(sDay, eDay);
+            const to = Math.max(sDay, eDay);
+
+            for (let d = from; d <= to; d++) {
+                const dow = new Date(year, month - 1, d).getDay();
+                if (offDaysOfWeek.includes(dow)) {
+                    scheduleData[currentYearMonth][d] = { type: 'off' };
+                } else {
+                    scheduleData[currentYearMonth][d] = {
+                        type: 'work',
+                        start,
+                        end,
+                        pos,
+                        reg,
+                        ot: autoOt
+                    };
+                }
+            }
+
+            persistData();
+            closeModal('bulkModal');
+            loadMonthData();
+        }
+
+        // --- Settings Modal Logic ---
+        function openSettingsModal() {
+            const rate = getRateForYM(currentYearMonth);
+            document.getElementById('setHourlyRate').value = rate.hourlyRate;
+            document.getElementById('setOtRate').value = rate.otRate;
+            document.getElementById('setPositions').value = presets.positions.join(', ');
+            document.getElementById('setShifts').value = presets.shifts.join(', ');
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function saveSettings() {
+            customRatesByYM[currentYearMonth] = {
+                hourlyRate: parseFloat(document.getElementById('setHourlyRate').value) || 0,
+                otRate: parseFloat(document.getElementById('setOtRate').value) || 0
+            };
+            presets.positions = document.getElementById('setPositions').value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+            presets.shifts = document.getElementById('setShifts').value.split(',').map(s => s.trim()).filter(s => s.includes('-'));
+
+            localStorage.setItem('shiftApp_rates_faraaa_v1', JSON.stringify(customRatesByYM));
+            localStorage.setItem('shiftApp_presets_faraaa_v1', JSON.stringify(presets));
+            closeModal('settingsModal');
+            loadMonthData();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function persistData() {
+            localStorage.setItem('shiftApp_data_faraaa_v1', JSON.stringify(scheduleData));
+        }
+
+        // --- Export Real Excel (.xlsx) ---
+        function exportExcel() {
+            const [year, month] = currentYearMonth.split('-').map(Number);
+            const daysInMonth = getDaysInMonth(year, month);
+            const records = scheduleData[currentYearMonth] || {};
+            const rate = getRateForYM(currentYearMonth);
+
+            const wsData = [
+                [`ตารางทำงาน ${THAI_MONTHS[month - 1]} ${year + 543} (เรทปกติ ${rate.hourlyRate}/ชม. | OT ${rate.otRate}/ชม.)`],
+                ["วันที่", "วัน", "เข้างาน", "เลิกงาน", "ตำแหน่ง", "ชม.ทำงาน", "OT (ชม.)", "ค่าแรงปกติ (บาท)", "ค่า OT (บาท)", "รวมรับ (บาท)"]
+            ];
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dow = THAI_DAYS_SHORT[new Date(year, month - 1, d).getDay()];
+                const rec = records[d];
+                if (!rec) {
+                    wsData.push([d, dow, "", "", "", "", "", "", "", ""]);
+                } else if (rec.type === 'off') {
+                    wsData.push([d, dow, "หยุด", "หยุด", "-", 0, 0, 0, 0, 0]);
+                } else {
+                    const reg = (typeof rec.reg === 'number') ? rec.reg : computeHours(rec.start, rec.end).reg;
+                    const ot = rec.ot || 0;
+                    const regPay = reg * rate.hourlyRate;
+                    const otPay = ot * rate.otRate;
+                    wsData.push([d, dow, rec.start, rec.end, rec.pos || "-", reg, ot, regPay, otPay, regPay + otPay]);
+                }
+            }
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            XLSX.utils.book_append_sheet(wb, ws, `${THAI_MONTHS[month - 1]}`);
+            XLSX.writeFile(wb, `ตารางกะงาน_${THAI_MONTHS[month - 1]}_${year + 543}.xlsx`);
+        }
+    </script>
+</body>
+</html>
